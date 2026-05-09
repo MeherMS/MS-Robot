@@ -1,0 +1,16 @@
+import './globals.css'
+
+export const metadata = {
+  title: 'MSRobot - Meher\'s AI Assistant',
+  description: 'Ask Meher anything about her experience, projects, and skills',
+}
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <body className="bg-white text-gray-900">
+        {children}
+      </body>
+    </html>
+  )
+}

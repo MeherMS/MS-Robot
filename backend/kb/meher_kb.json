@@ -1,0 +1,533 @@
+{
+  "metadata": {
+    "last_updated": "2026-05-03",
+    "version": "2.0",
+    "name": "Meher Selmi",
+    "title": "Senior Data Scientist | FinTech & AI",
+    "summary": "Data Scientist with 5+ years of experience architecting and deploying machine learning models in startup environments, specializing in financial analytics, ESG modeling, and AI-driven credit scoring systems."
+  },
+  "projects": [
+    {
+      "id": "credit_esg_reporting",
+      "title": "Credit Score & ESG Report System",
+      "description": "End-to-end credit rating and ESG assessment platform delivering automated client reports integrating AI-based credit scoring, ESG metrics, and detailed financial analysis for holistic corporate creditworthiness  evaluation.",
+      "technologies": ["Python", "XGBoost", "GCP Vertex AI", "Financial Analytics", "ESG Metrics"],
+      "duration": "2023-Present",
+      "company": "SmartGreenInvest LTD",
+      "outcome": "Delivered 10,000+ end-to-end credit rating reports, reducing report generation time from days/weeks to near-instant",
+      "domain": "fintech",
+      "keywords": ["credit scoring", "esg", "automated reporting", "financial analytics", "gcp"],
+      "metrics": {
+        "reports_delivered": "10000+",
+        "time_reduction": "days/weeks to instant",
+        "impact": "Comprehensive risk view for investors, corporates, and regulators"
+      }
+    },
+    {
+      "id": "esg_modeling_framework",
+      "title": "Semi-Automated ESG Modeling Framework",
+      "description": "Quantifies companies' environmental, social, and governance performance in a consistent and auditable way, surfacing actionable recommendations to drive measurable sustainability improvements.",
+      "technologies": ["Python", "Machine Learning", "ESG Metrics", "Data Automation"],
+      "duration": "2023-Present",
+      "company": "SmartGreenInvest LTD",
+      "outcome": "Significantly reduced manual assessment time and provided data-driven roadmaps for sovereign nations (Luxembourg, France)",
+      "domain": "sustainability",
+      "keywords": ["esg", "modeling", "sustainability", "automation", "governance"],
+      "metrics": {
+        "manual_time_reduction": "significant",
+        "nations_covered": 2,
+        "countries": ["Luxembourg", "France"]
+      }
+    },
+    {
+      "id": "ai_credit_rating_platform",
+      "title": "AI-Driven Credit Rating Platform",
+      "description": "Developed credit scoring system combining financial ratios and ESG signals, offering a faster and smarter alternative to traditional manual credit evaluations.",
+      "technologies": ["Python", "XGBoost", "Financial Ratios", "Machine Learning", "AWS"],
+      "duration": "2020-Present",
+      "company": "Trident-AI LTD",
+      "outcome": "Reduced corporate credit rating turnaround from several weeks to near-instant with 90%+ accuracy",
+      "domain": "fintech",
+      "keywords": ["credit rating", "ai models", "financial analysis", "automation", "90% accuracy"],
+      "metrics": {
+        "accuracy": "90%+",
+        "turnaround_reduction": "weeks to instant",
+        "junior_team_mentored": "3-5"
+      },
+      "link": "https://github.com/meherms"
+    },
+    {
+      "id": "competitor_analysis_dashboard",
+      "title": "Competitor Market Analysis Dashboard",
+      "description": "Streamlit-based business intelligence platform managing competitor datasets with advanced tagging features (revenue, strategy, services), dynamic filters, and data visualization.",
+      "technologies": ["Python", "Streamlit", "Pandas", "Data Visualization", "Business Intelligence"],
+      "duration": "2024",
+      "outcome": "Production-ready BI tool for competitive intelligence and market analysis",
+      "domain": "business-intelligence",
+      "keywords": ["dashboard", "streamlit", "competitor analysis", "visualization", "business intelligence"]
+    },
+    {
+      "id": "llm_quiz_application",
+      "title": "LLM-Powered Quiz Application",
+      "description": "Local quiz generator for data science skill assessment leveraging pretrained LLM with prompt engineering. Demonstrates prompt engineering, backend logic, and API design.",
+      "technologies": ["Python", "DeepSeek LLM", "Prompt Engineering", "REST API", "Machine Learning"],
+      "duration": "2024",
+      "outcome": "Functional quiz generator showcasing LLM integration and prompt design capabilities",
+      "domain": "ai-applications",
+      "keywords": ["llm", "quiz generator", "prompt engineering", "deepseek", "api design"]
+    },
+    {
+      "id": "used_car_price_predictor",
+      "title": "Used Car Price Prediction System",
+      "description": "End-to-end regression modeling system. Collected 10K+ car listings via web scraping from multiple automotive marketplaces and trained ML models achieving 92% R² accuracy.",
+      "technologies": ["Python", "scikit-learn", "Web Scraping", "Regression Models", "Data Collection"],
+      "duration": "2023",
+      "outcome": "Predictive model with 92% R² accuracy; demonstrates data collection, feature engineering, and deployment capabilities",
+      "domain": "machine-learning",
+      "keywords": ["regression", "price prediction", "web scraping", "92% accuracy", "automotive"]
+    },
+    {
+      "id": "portfolio_chatbot",
+      "title": "Portfolio Chatbot (Interactive)",
+      "description": "Hybrid BM25 + Cloudflare Workers AI chatbot for portfolio discovery on GitHub Pages. Uses Mistral-7B for free LLM inference at scale.",
+      "technologies": ["BM25", "Mistral-7B", "Cloudflare Workers", "JavaScript", "RAG"],
+      "duration": "2024-Q4",
+      "outcome": "Deployment-ready architecture with free LLM inference",
+      "domain": "ai-infrastructure",
+      "keywords": ["chatbot", "bm25", "mistral", "cloudflare workers", "rag", "inference"],
+      "status": "nearly deployment-ready - awaiting actual Cloudflare Worker URL deployment"
+    }
+  ],
+  "experience": [
+    {
+      "id": "smartgreeninvest",
+      "company": "SmartGreenInvest LTD",
+      "location": "London, UK (Remote)",
+      "role": "Data Scientist",
+      "duration": "Feb 2023 – Present",
+      "duration_years": 3,
+      "key_achievements": [
+        "Delivered 10,000+ end-to-end credit rating reports covering financial analysis, credit scoring, and ESG assessment, reducing report generation time from days/weeks to near-instant",
+        "Built a semi-automated ESG model quantifying companies' environmental, social, and governance performance in consistent and auditable way",
+        "Developed sustainability reports for 2 sovereign nations (Luxembourg and France), providing data-driven roadmaps toward sustainability targets with gap analysis"
+      ],
+      "domains": ["fintech", "sustainability", "esg", "credit-scoring"],
+      "keywords": ["senior", "data scientist", "credit rating", "esg", "automation", "reporting"],
+      "technologies": ["Python", "GCP Vertex AI", "Machine Learning", "Financial Analytics"]
+    },
+    {
+      "id": "trident_ai",
+      "company": "Trident-AI LTD",
+      "location": "Burgas, Bulgaria (Remote)",
+      "role": "Data Scientist & ML Engineer",
+      "duration": "May 2020 – Present",
+      "duration_years": 6,
+      "key_achievements": [
+        "Built AI models (with more than 90% accuracy) that reduced corporate credit rating turnaround from several weeks to near-instant, replacing manual opaque process",
+        "Guided and reviewed work of 3–5 junior data scientists, helping them grow from trainees to autonomous contributors",
+        "Owned AWS cloud setup (10+ services) end-to-end; from architecture decisions to day-to-day infrastructure management"
+      ],
+      "domains": ["fintech", "mlops", "cloud-computing", "credit-scoring"],
+      "keywords": ["data scientist", "ml engineer", "credit rating", "aws", "leadership", "mentoring"],
+      "technologies": ["Python", "AWS (SageMaker, EC2, S3)", "XGBoost", "Machine Learning", "Cloud Architecture"]
+    },
+    {
+      "id": "optimalogistic",
+      "company": "Optimalogistic",
+      "location": "Sfax, Tunisia",
+      "role": "Consultant Data Scientist",
+      "duration": "Jan 2020 – Apr 2020",
+      "duration_years": 0.33,
+      "key_achievements": [
+        "Optimized logistics costs through data cleaning and ML model training for vehicle availability prediction",
+        "Deployed predictive models using Flask with Chart.js data visualization",
+        "Implemented route optimization using Google OR-Tools for vehicle routing"
+      ],
+      "domains": ["optimization", "logistics", "machine-learning"],
+      "keywords": ["consultant", "logistics", "optimization", "flask", "visualization"]
+    },
+    {
+      "id": "la_poste_tunisienne_2",
+      "company": "La Poste Tunisienne",
+      "location": "Sbeitla, Kasserine, Tunisia",
+      "role": "Summer Internship",
+      "duration": "Jul 2016 – Aug 2016",
+      "duration_years": 0.17
+    },
+    {
+      "id": "la_poste_tunisienne_1",
+      "company": "La Poste Tunisienne",
+      "location": "Sbeitla, Kasserine, Tunisia",
+      "role": "Summer Internship",
+      "duration": "Jul 2015 – Sep 2015",
+      "duration_years": 0.25
+    }
+  ],
+  "skills": [
+    {
+      "category": "Programming Languages",
+      "items": [
+        {
+          "name": "Python",
+          "proficiency": "expert",
+          "context": "Building efficient data pipelines, automation tools, and AI applications"
+        },
+        {
+          "name": "SQL",
+          "proficiency": "expert",
+          "context": "Database querying and data manipulation"
+        },
+        {
+          "name": "JavaScript",
+          "proficiency": "intermediate",
+          "context": "Frontend development and web applications"
+        }
+      ]
+    },
+    {
+      "category": "Machine Learning & Data Science",
+      "items": [
+        {
+          "name": "scikit-learn",
+          "proficiency": "expert",
+          "projects": ["used_car_price_predictor", "ai_credit_rating_platform"]
+        },
+        {
+          "name": "XGBoost",
+          "proficiency": "expert",
+          "projects": ["credit_esg_reporting", "ai_credit_rating_platform"]
+        },
+        {
+          "name": "Keras/TensorFlow",
+          "proficiency": "advanced"
+        },
+        {
+          "name": "PyTorch",
+          "proficiency": "basic"
+        },
+        {
+          "name": "Pandas",
+          "proficiency": "expert",
+          "context": "Data manipulation and analysis"
+        },
+        {
+          "name": "NumPy",
+          "proficiency": "expert"
+        },
+        {
+          "name": "Matplotlib/Seaborn",
+          "proficiency": "advanced",
+          "context": "Data visualization"
+        }
+      ]
+    },
+    {
+      "category": "Generative AI & LLMs",
+      "items": [
+        {
+          "name": "LangChain/LangGraph",
+          "proficiency": "expert",
+          "projects": ["loan_underwriting_copilot"]
+        },
+        {
+          "name": "Prompt Engineering",
+          "proficiency": "expert",
+          "context": "Built multiple production LLM systems"
+        },
+        {
+          "name": "RAG (Retrieval-Augmented Generation)",
+          "proficiency": "expert",
+          "projects": ["portfolio_chatbot"]
+        },
+        {
+          "name": "DeepSeek LLM",
+          "proficiency": "advanced",
+          "projects": ["llm_quiz_application"]
+        },
+        {
+          "name": "Gemini API",
+          "proficiency": "intermediate"
+        }
+      ]
+    },
+    {
+      "category": "Cloud Platforms & MLOps",
+      "items": [
+        {
+          "name": "Google Cloud Platform (Vertex AI)",
+          "proficiency": "expert",
+          "projects": ["esg_modeling_framework", "credit_esg_reporting"]
+        },
+        {
+          "name": "AWS (SageMaker, EC2, S3)",
+          "proficiency": "expert",
+          "projects": ["ai_credit_rating_platform"],
+          "context": "Owned 10+ services end-to-end"
+        },
+        {
+          "name": "Cloudflare Workers",
+          "proficiency": "intermediate",
+          "projects": ["portfolio_chatbot"]
+        },
+        {
+          "name": "Docker",
+          "proficiency": "advanced"
+        },
+        {
+          "name": "GitHub Actions",
+          "proficiency": "advanced"
+        }
+      ]
+    },
+    {
+      "category": "Web Development & Deployment",
+      "items": [
+        {
+          "name": "Flask",
+          "proficiency": "advanced",
+          "projects": ["optimalogistic"]
+        },
+        {
+          "name": "Streamlit",
+          "proficiency": "advanced",
+          "projects": ["competitor_analysis_dashboard"]
+        },
+        {
+          "name": "REST APIs",
+          "proficiency": "advanced"
+        },
+        {
+          "name": "Chart.js",
+          "proficiency": "intermediate"
+        }
+      ]
+    },
+    {
+      "category": "Databases & Tools",
+      "items": [
+        {
+          "name": "PostgreSQL",
+          "proficiency": "advanced"
+        },
+        {
+          "name": "MySQL",
+          "proficiency": "advanced"
+        },
+        {
+          "name": "MongoDB",
+          "proficiency": "intermediate"
+        },
+        {
+          "name": "Jupyter",
+          "proficiency": "expert"
+        },
+        {
+          "name": "Git",
+          "proficiency": "expert"
+        }
+      ]
+    },
+    {
+      "category": "Domain Expertise",
+      "items": [
+        {
+          "name": "Credit Scoring",
+          "proficiency": "expert",
+          "context": "Built multiple credit rating systems with 90%+ accuracy"
+        },
+        {
+          "name": "ESG Modeling & Analytics",
+          "proficiency": "expert",
+          "projects": ["esg_modeling_framework", "credit_esg_reporting"]
+        },
+        {
+          "name": "Financial Analytics",
+          "proficiency": "expert",
+          "context": "Financial ratios, risk profiling, sustainability metrics"
+        },
+        {
+          "name": "FinTech",
+          "proficiency": "expert"
+        },
+        {
+          "name": "MLOps",
+          "proficiency": "advanced",
+          "context": "Automated pipelines, model deployment, infrastructure management"
+        },
+        {
+          "name": "Time Series Forecasting",
+          "proficiency": "advanced"
+        },
+        {
+          "name": "Web Scraping",
+          "proficiency": "advanced",
+          "projects": ["used_car_price_predictor"]
+        },
+        {
+          "name": "Optimization (OR-Tools)",
+          "proficiency": "intermediate"
+        }
+      ]
+    },
+    {
+      "category": "Soft Skills",
+      "items": [
+        {
+          "name": "Problem-Solving & Analytical Thinking",
+          "description": "Breaking down complex business and technical problems, exploring multiple solutions, delivering clear data-driven insights. Comfortable in ambiguous startup environments."
+        },
+        {
+          "name": "Communication & Cross-Functional Collaboration",
+          "description": "Explaining technical concepts to non-technical stakeholders, writing clear reports, collaborating with product, ESG, business, and engineering teams. Led interns and coordinated multi-disciplinary projects."
+        },
+        {
+          "name": "Adaptability & Ownership",
+          "description": "Taking ownership of entire projects from ideation to deployment. Quickly adapting to new technologies, tools, and responsibilities. Thrives in fast-paced environments."
+        },
+        {
+          "name": "Leadership & Mentoring",
+          "description": "Guided 3-5 junior data scientists from trainees to autonomous contributors"
+        }
+      ]
+    }
+  ],
+  "education": [
+    {
+      "institution": "Institut Superieur d'informatique de Mahdia",
+      "location": "Mahdia, Tunisia",
+      "degree": "Master of Science",
+      "field": "Data Science",
+      "duration": "2018 – 2020",
+      "focus": ["Machine Learning", "Big Data", "Predictive Modeling"]
+    },
+    {
+      "institution": "Institut Superieur d'informatique de Mahdia",
+      "location": "Mahdia, Tunisia",
+      "degree": "Bachelor of Science",
+      "field": "Computer Science",
+      "duration": "2014 – 2017"
+    }
+  ],
+  "certifications": [
+    {
+      "name": "AWS Certified Cloud Practitioner",
+      "issuer": "Amazon Web Services",
+      "issued": "Oct 2022",
+      "expires": "Oct 2025",
+      "credentialId": "EZ15B3BKZBV41LG1"
+    },
+    {
+      "name": "Prompt Design in Vertex AI Skill Badge",
+      "issuer": "Google Cloud",
+      "status": "active"
+    },
+    {
+      "name": "IBM Data Science Professional Certificate",
+      "issuer": "IBM/Coursera",
+      "issued": "Nov 2019"
+    },
+    {
+      "name": "Machine Learning with Python",
+      "issuer": "Coursera",
+      "issued": "Sep 2019"
+    },
+    {
+      "name": "Applied AI with Deep Learning",
+      "issuer": "Coursera"
+    },
+    {
+      "name": "Mathematics for Machine Learning Specialization",
+      "issuer": "Imperial College London/Coursera",
+      "issued": "Sep 2019"
+    },
+    {
+      "name": "AWS Cloud Quest: Cloud Practitioner",
+      "issuer": "Amazon Web Services"
+    }
+  ],
+  "personal": {
+    "location": "Sbeitla, Kasserine, Tunisia",
+    "coordinates": {
+      "latitude": 35.25,
+      "longitude": 9.09
+    },
+    "personality_type": "ISTP-A (Virtuoso)",
+    "personality_traits": {
+      "energy": "64% Introverted",
+      "mind": "62% Observant",
+      "nature": "81% Thinking",
+      "tactics": "60% Prospecting",
+      "identity": "68% Assertive"
+    },
+    "personality_description": "Bold explorer of the tangible world, driven by restless curiosity to understand how things work. Hands-on approach matched by adaptability. Thrive on solving immediate problems with practical logic and spontaneous creativity. Independent nature—prefer to chart own course relying on sharp analytical skills and hands-on experience rather than conventional wisdom.",
+    "key_traits": [
+      "Direct communication style",
+      "Casual (ISTP-A)",
+      "Technical depth when appropriate",
+      "Transparent and honest",
+      "Practical implementations focused",
+      "Independent and self-reliant",
+      "Calm under pressure",
+      "Quick troubleshooter"
+    ],
+    "interests": [
+      "Music",
+      "Espérance de Tunis football club",
+      "AI-driven personal tools",
+      "Hands-on technical projects"
+    ],
+    "strengths": [
+      "Hands-on approach to tangible tasks",
+      "Quick troubleshooting and problem-solving",
+      "Calm under pressure and crisis situations",
+      "Independent thinking and decision-making",
+      "Enjoys varied challenges and new learning",
+      "Highly adaptable to new tools and practices",
+      "Quick mastery of practical skills",
+      "Quiet loyalty and meaningful actions"
+    ],
+    "development_areas": [
+      "Long-term planning and commitments",
+      "Networking and self-promotion",
+      "Patience with theoretical discussions",
+      "Detailed communication (tendency toward minimalism)",
+      "Emotional expression and vulnerability",
+      "Routine task engagement"
+    ],
+    "communication_style": "Prefers clear, simple language over formal phrasing. Direct, concise style sometimes omits details. Values practical implementations and transparent discussions.",
+    "contact": {
+      "phone": "+216 26 045 426",
+      "email": "selmi.ms1995@gmail.com",
+      "linkedin": "linkedin.com/in/meherms",
+      "github": "github.com/meherms",
+      "portfolio": "meherms.github.io"
+    }
+  },
+  "languages": [
+    {
+      "language": "Arabic",
+      "proficiency": "Native"
+    },
+    {
+      "language": "English",
+      "proficiency": "Full professional proficiency"
+    },
+    {
+      "language": "French",
+      "proficiency": "Professional working proficiency"
+    }
+  ],
+  "summary": {
+    "total_experience": "5+ years",
+    "projects_completed": 6,
+    "certifications_count": 8,
+    "key_strengths": [
+      "Expert in credit scoring and financial analytics",
+      "Production-grade ML systems at scale",
+      "Cloud architecture (AWS, GCP)",
+      "AI/LLM integration (LangChain, RAG, prompt engineering)",
+      "Leadership and mentoring"
+    ],
+    "unique_value": "Combines deep technical expertise in ML and cloud computing with real-world fintech and sustainability domain experience, delivered in fast-paced startup environments. Pragmatic problem-solver with hands-on implementation focus."
+  }
+}
