@@ -119,7 +119,7 @@ async def chat(request: Request, payload: dict):
                 "That sounds like a personal question! 😊\n\n"
                 "For a deeper conversation about Meher's interests and personality, "
                 "I'd recommend reaching out directly:\n\n"
-                "📧 **Email:** contact@meherms.com\n"
+                "📧 **Email:** selmi.ms1995@gmail.com\n"
                 "🐙 **GitHub:** https://github.com/meherms\n"
                 "🌐 **Portfolio:** https://meherms.github.io\n\n"
                 "That said, based on my general training knowledge, I can share some insights..."
@@ -200,9 +200,9 @@ async def chat(request: Request, payload: dict):
                     }
 
                 response_text = (
-                    "Based on my training knowledge (my second artificial brain), I can help with this:\n\n"
+                    #"Based on my training knowledge (my second artificial brain), I can help with this:\n\n"
                     f"{llm_result['response']}\n\n"
-                    "*Note: This is general knowledge, not based on Meher's specific experience. "
+                    "*Note: This might be a general knowledge, not only based on Meher's specific experience. "
                     "Ask me about specific projects or skills for more accurate information!*"
                 )
                 
