@@ -14,7 +14,7 @@ class ResponseFormatter:
 
     def format_kb_entry(self, kb_entry: dict) -> str:
         """
-        Format a KB entry (project or experience) into readable text
+        Format a KB entry (project, experience, certification, etc.) into readable text
         
         Args:
             kb_entry: Dictionary with 'type', 'title', 'description', 'outcome', etc.
@@ -28,6 +28,33 @@ class ResponseFormatter:
         outcome = kb_entry.get("outcome", "")
         technologies = kb_entry.get("technologies", [])
         
+        # ===== CERTIFICATIONS =====
+        if entry_type == "certification":
+            text = f"**{title}**\n\n"
+            if description:
+                text += f"{description}\n"
+            issued = kb_entry.get("issued", "")
+            if issued:
+                text += f"\n**Issued:** {issued}"
+            expires = kb_entry.get("expires", "")
+            if expires:
+                text += f" | **Expires:** {expires}"
+            return text.strip()
+        
+        # ===== EDUCATION =====
+        if entry_type == "education":
+            text = f"**{title}**\n\n"
+            if description:
+                text += f"{description}\n"
+            return text.strip()
+
+        # ===== PROJECTS & EXPERIENCES =====
+        if entry_type == "contact":
+            text = f"**{title}**\n\n"
+            if description:
+                text += f"{description}\n"
+            return text.strip()
+        # ===== PROJECTS & EXPERIENCES =====
         text = f"**{title}**\n\n"
         
         if description:
@@ -41,6 +68,7 @@ class ResponseFormatter:
             text += f"**Outcome:** {outcome}\n"
         
         return text.strip()
+
 
     def format_source(self, kb_entry: dict) -> dict:
         """
@@ -57,6 +85,70 @@ class ResponseFormatter:
             "link": kb_entry.get("link", ""),
         }
 
+    def format_all_certifications(self, certifications: list) -> str:
+        """
+        Format all certifications as a formatted list
+        
+        Args:
+            certifications: List of certification dicts from KB
+        
+        Returns:
+            Formatted string with all certifications
+        """
+        if not certifications:
+            return "I don't have any certifications listed in my records."
+        
+        text = "Here are my certifications:\n\n"
+        
+        for cert in certifications:
+            name = cert.get("name", "")
+            issuer = cert.get("issuer", "")
+            issued = cert.get("issued", "")
+            expires = cert.get("expires", "")
+            
+            text += f"**{name}**\n"
+            if issuer:
+                text += f"Issued by: {issuer}\n"
+            if issued:
+                text += f"Issued: {issued}\n"
+            if expires:
+                text += f"Expires: {expires}\n"
+            text += "\n"
+        
+        return text.strip()
+    
+    def format_all_projects(self, projects: list) -> str:
+        """
+        Format all projects as a brief list, then offer to go into detail
+        
+        Args:
+            projects: List of project dicts from KB
+        
+        Returns:
+            Formatted string with project overview
+        """
+        if not projects:
+            return "I don't have any projects listed in my records."
+        
+        text = "I've worked on several projects. Here's a quick overview:\n\n"
+        
+        for i, project in enumerate(projects, 1):
+            title = project.get("title", "")
+            duration = project.get("duration", "")
+            outcome = project.get("outcome", "")
+            
+            text += f"**{i}. {title}**"
+            if duration:
+                text += f" ({duration})"
+            text += "\n"
+            if outcome:
+                text += f"   {outcome}\n"
+            text += "\n"
+        
+        text += "\nWould you like to know more details about any specific project? I can tell you about the technologies used, the challenges faced, or the impact it had."
+        
+        return text.strip()
+
     def generate_followups(self, original_question: str, kb_match: dict = None) -> list:
         """
         Generate 2-3 suggested follow-up questions
@@ -72,24 +164,35 @@ class ResponseFormatter:
         
         if kb_match:
             title = kb_match.get("title", "")
+            entry_type = kb_match.get("type", "project")
             
-            # Suggest follow-ups based on KB match
-            followups.append(f"Tell me more about the technologies you used in {title}")
-            followups.append(f"What were the key outcomes of {title}?")
+            # Customize based on entry type
+            if entry_type == "certification":
+                followups.append(f"Which aspect of {title} interests you?")
+                followups.append("Tell me about your other certifications")
+                followups.append("How did you prepare for this certification?")
             
-            # Add a generic follow-up
-            if "how" in original_question.lower():
-                followups.append("What challenges did you face?")
-            elif "why" in original_question.lower():
-                followups.append("What was the impact of this work?")
-            else:
-                followups.append("How does this relate to your current work?")
+            elif entry_type == "experience":
+                followups.append(f"What were your key achievements in {title}?")
+                followups.append("Tell me about the technologies you used")
+                followups.append("What challenges did you face there?")
+            
+            else:  # project or other
+                followups.append(f"Tell me more about the technologies you used in {title}")
+                followups.append(f"What were the key outcomes of {title}?")
+                
+                if "how" in original_question.lower():
+                    followups.append("What challenges did you face?")
+                elif "why" in original_question.lower():
+                    followups.append("What was the impact of this work?")
+                else:
+                    followups.append("How does this relate to your current work?")
         else:
             # Generic follow-ups if no KB match
             followups = [
-                "Can you expand on that?",
-                "What's an example of this in your work?",
-                "How would you approach this problem?",
+                "Tell me about your projects",
+                "What are your key skills?",
+                "What's your background?",
             ]
         
         return followups[:3]  # Return max 3 followups
@@ -103,7 +206,7 @@ class ResponseFormatter:
         suggested_followups: list,
     ) -> dict:
         """
-        Format complete response (legacy method, kept for compatibility)
+        Format complete response
         
         Returns full response dict
         """

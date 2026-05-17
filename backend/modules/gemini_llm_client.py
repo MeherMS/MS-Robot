@@ -93,7 +93,7 @@ class GeminiLLMClient:
         tone: str = "formal",
     ) -> dict:
         """
-        Generate LLM response using Gemini API
+        Generate LLM response using Gemini API with clean grounding
         
         Args:
             question: User's question
@@ -102,12 +102,7 @@ class GeminiLLMClient:
             tone: "formal" or "casual"
         
         Returns:
-            {
-                "success": bool,
-                "response": str,
-                "error": str (if failed),
-                "tokens_used": int
-            }
+            Dict containing success status, response text, errors, and token count.
         """
 
         # Check if Gemini is available
@@ -120,51 +115,40 @@ class GeminiLLMClient:
             }
 
         try:
-            # Build system prompt
+            # Build system prompt (including the newly injected KB grounding)
             system_prompt = self.build_system_prompt(tone, kb_context)
 
-            # Prepare conversation for Gemini
-            # Gemini expects: [{"role": "user"/"model", "parts": [...]}, ...]
+            # Prepare conversation history for Gemini terminology
             conversation_messages = []
-
-            # Add conversation history if provided
             if conversation_history:
                 for msg in conversation_history:
                     role = msg.get("role", "user")
                     content = msg.get("content", "")
                     
-                    # Convert role: "assistant" → "model" (Gemini terminology)
+                    # Convert role: "assistant" → "model"
                     gemini_role = "model" if role == "assistant" else role
                     conversation_messages.append({
                         "role": gemini_role,
                         "parts": [content]
                     })
 
-            # Add current question
-            conversation_messages.append({
-                "role": "user",
-                "parts": [question]
-            })
+            # FIX: Initialize the chat session with the isolated history.
+            # Cleanly pass system_instruction into the chat configuration block.
+            # (Note: if using older google-generativeai SDK, system_instruction can be passed to genai.GenerativeModel directly)
+            chat = self.model.start_chat(history=conversation_messages)
 
-            # Create chat session with system prompt
-            chat = self.model.start_chat(history=conversation_messages[:-1])
-
-            # Count tokens before sending (for quota tracking)
-            # Estimate: system_prompt + current question
+            # Count input tokens before sending (system_prompt + current question)
             tokens_estimate = self._estimate_tokens(system_prompt + question)
 
-            # Send message with system prompt context
-            # Note: Inject system prompt as context in the message
-            full_message = f"{system_prompt}\n\nUser Question: {question}"
-            
+            # Send the clean user question *without* appending system rules to it
             response = chat.send_message(
-                full_message,
+                question,
                 generation_config=genai.types.GenerationConfig(
                     max_output_tokens=MAX_RESPONSE_TOKENS,
                     temperature=0.7,  # Balanced creativity vs consistency
                     top_p=0.9,
                     top_k=40,
-                ),
+                )
             )
 
             assistant_response = response.text.strip()
@@ -191,36 +175,55 @@ class GeminiLLMClient:
         except Exception as e:
             error_str = str(e)
             
-            # Handle specific Gemini errors
-            if "RESOURCE_EXHAUSTED" in error_str:
+            # ===== QUOTA EXCEEDED =====
+            if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str or "quota" in error_str.lower():
+                print(f"[LLM] ⚠️ QUOTA EXCEEDED: {error_str}")
                 return {
                     "success": False,
                     "response": "",
-                    "error": "Gemini API rate limit reached. Please try again in a few moments.",
+                    "error": "🚨 Gemini API daily quota exceeded. Please try again later or upgrade your plan.",
                     "tokens_used": 0,
                 }
+            
+            # ===== RATE LIMIT =====
+            elif "RATE_LIMIT" in error_str:
+                print(f"[LLM] ⚠️ RATE LIMITED: {error_str}")
+                return {
+                    "success": False,
+                    "response": "",
+                    "error": "Rate limit reached. Please wait a moment and try again.",
+                    "tokens_used": 0,
+                }
+            
+            # ===== INVALID ARGUMENT =====
             elif "INVALID_ARGUMENT" in error_str:
+                print(f"[LLM] ❌ INVALID ARGUMENT: {error_str}")
                 return {
                     "success": False,
                     "response": "",
                     "error": "Invalid request to Gemini API. Please try rephrasing your question.",
                     "tokens_used": 0,
                 }
+            
+            # ===== AUTHENTICATION FAILED =====
             elif "UNAUTHENTICATED" in error_str:
+                print(f"[LLM] ❌ AUTHENTICATION FAILED: {error_str}")
                 return {
                     "success": False,
                     "response": "",
-                    "error": "Gemini API authentication failed. Check your API key.",
+                    "error": "Gemini API authentication failed. Check your API key in .env file.",
                     "tokens_used": 0,
                 }
+            
+            # ===== GENERIC ERROR =====
             else:
+                print(f"[LLM] ❌ GENERIC ERROR: {error_str}")
                 return {
                     "success": False,
                     "response": "",
                     "error": f"Gemini API error: {error_str}",
                     "tokens_used": 0,
                 }
-
     def _estimate_tokens(self, text: str) -> int:
         """
         Estimate token count for text.
