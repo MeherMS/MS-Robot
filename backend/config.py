@@ -6,14 +6,29 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ============================================================================
-# GEMINI API CONFIGURATION
+# GEMINI API CONFIGURATION - MULTIPLE KEYS FOR QUOTA ROTATION
 # ============================================================================
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY environment variable not set. Get one at: https://ai.google.dev/")
+
+# Parse multiple API keys from comma-separated env variable
+GEMINI_API_KEYS_RAW = os.getenv("GEMINI_API_KEYS", "").strip()
+
+if not GEMINI_API_KEYS_RAW:
+    raise ValueError(
+        "GEMINI_API_KEYS environment variable not set. \n"
+        "Format: GEMINI_API_KEYS=key1,key2,key3\n"
+        "Get keys at: https://ai.google.dev/"
+    )
+
+GEMINI_API_KEYS = [key.strip() for key in GEMINI_API_KEYS_RAW.split(",") if key.strip()]
+
+if not GEMINI_API_KEYS:
+    raise ValueError("No valid API keys found in GEMINI_API_KEYS")
+
+print(f"[CONFIG] ✅ Loaded {len(GEMINI_API_KEYS)} Gemini API key(s)")
 
 GEMINI_MODEL = "gemini-2.5-flash"  # Free tier model
 MAX_RESPONSE_TOKENS = 1024  # Max tokens in LLM response
+
 
 # ============================================================================
 # KB RETRIEVAL THRESHOLDS
