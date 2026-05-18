@@ -11,7 +11,7 @@ load_dotenv()
 
 # Parse multiple API keys from comma-separated env variable
 GEMINI_API_KEYS_RAW = os.getenv("GEMINI_API_KEYS", "").strip()
-
+MONGODB_URI = os.getenv("MONGODB_URI")
 if not GEMINI_API_KEYS_RAW:
     raise ValueError(
         "GEMINI_API_KEYS environment variable not set. \n"
