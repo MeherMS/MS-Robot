@@ -5,6 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from modules.session_manager import session_manager
 from modules.formatter import ResponseFormatter
 from modules.token_limiter import token_limiter
+from modules.token_limiter import token_limiter
+from modules.logger import chat_logger
 from config import CONF_LLM_ONLY
 from datetime import datetime
 from pathlib import Path
@@ -126,6 +128,7 @@ async def chat(request: Request, payload: dict):
     message = payload.get("message", "").strip()
     tone = payload.get("tone", "formal")
     session_id = payload.get("session_id", client_ip)
+    consent_given = payload.get("consent_given", False)
     
     # Validate input
     if not message:
@@ -185,6 +188,16 @@ async def chat(request: Request, payload: dict):
         # Add quota and session info
         formatted_response["quota"] = limit_status
         formatted_response["session_id"] = session_id
+        # Log to MongoDB if user consented
+        chat_logger.log_chat(
+            user_message=message,
+            assistant_response=llm_result["response"],
+            confidence=CONF_LLM_ONLY,
+            kb_used=True,
+            session_id=session_id,
+            tone=tone,
+            consent_given=consent_given,
+        )
         
         print(f"[CHAT] ✅ Response sent. Tokens: ~{llm_result['tokens_used']}. Quota: {limit_status['count']}/{limit_status['limit']}")
         file_executor.submit(save_conversation_to_mongodb, session_id, message, llm_result["response"], CONF_LLM_ONLY, True, tone)

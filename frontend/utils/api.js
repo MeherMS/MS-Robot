@@ -10,23 +10,21 @@ const apiClient = axios.create({
   timeout: 180000, // 30 second timeout
 })
 
-export const sendMessage = async (message, tone = 'formal', conversationHistory = []) => {
+export const sendMessage = async (message, tone = 'formal', conversationHistory = [], consentGiven = false) => {
   try {
     const response = await apiClient.post('/chat', {
       message,
       tone,
       conversation_history: conversationHistory,
+      consent_given: consentGiven,
     })
-
     // Validate response structure
     if (!response.data || typeof response.data !== 'object') {
       throw new Error('Invalid response structure from server')
     }
-
     return response.data
   } catch (error) {
     console.error('API Error:', error)
-
     // Provide user-friendly error messages
     if (error.code === 'ECONNABORTED') {
       throw new Error('Request timeout - backend took too long to respond')
@@ -40,11 +38,9 @@ export const sendMessage = async (message, tone = 'formal', conversationHistory 
     if (!error.response) {
       throw new Error('Cannot connect to backend at ' + API_URL)
     }
-
     throw new Error(error.response?.data?.detail || error.message || 'Unknown error')
   }
 }
-
 export const getKBStats = async () => {
   try {
     const response = await apiClient.get('/kb/stats')

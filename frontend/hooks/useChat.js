@@ -1,5 +1,4 @@
 'use client'
-
 import { useState, useCallback } from 'react'
 import { sendMessage } from '@/utils/api'
 
@@ -18,18 +17,18 @@ export const useChat = () => {
       addMessage('user', userMessage)
       setLoading(true)
       setError(null)
-
       try {
+        // Get consent status from sessionStorage (only in browser)
+        const consentGiven = sessionStorage.getItem('msrobot_consent') === 'true'
+
         // Prepare conversation history for API
         // Backend expects: [{ role: "user|assistant", content: "text" }]
         const conversationHistory = messages.map((msg) => {
           let content = msg.content
-
           // If it's an assistant message (object), extract just the response text
           if (msg.role === 'assistant' && typeof msg.content === 'object') {
             content = msg.content.response || ''
           }
-
           return {
             role: msg.role,
             content: content,
@@ -37,11 +36,9 @@ export const useChat = () => {
         })
 
         // Call API
-        const response = await sendMessage(userMessage, tone, conversationHistory)
-
+        const response = await sendMessage(userMessage, tone, conversationHistory, consentGiven)
         // Add assistant response (full object with metadata)
         addMessage('assistant', response)
-
         return response
       } catch (err) {
         setError(err.message || 'Failed to get response')
