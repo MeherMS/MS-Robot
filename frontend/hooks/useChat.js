@@ -3,6 +3,9 @@
 import { useState, useCallback } from 'react'
 import { sendMessage } from '@/utils/api'
 
+// Get consent status from sessionStorage
+const consentGiven = sessionStorage.getItem('msrobot_consent') === 'true';
+
 export const useChat = () => {
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(false)
@@ -37,7 +40,7 @@ export const useChat = () => {
         })
 
         // Call API
-        const response = await sendMessage(userMessage, tone, conversationHistory)
+        const response = await sendMessage(userMessage, tone, conversationHistory,consentGiven)
 
         // Add assistant response (full object with metadata)
         addMessage('assistant', response)

@@ -5,6 +5,7 @@ import { useChat } from '@/hooks/useChat'
 import { getKBStats } from '@/utils/api'
 import MessageList from './MessageList'
 import ChatInput from './ChatInput'
+import ConsentModal from './ConsentModal'
 
 export default function ChatContainer() {
   const { messages, loading, error, sendUserMessage, clearChat } = useChat()
@@ -39,6 +40,7 @@ export default function ChatContainer() {
 
   return (
     <div className="h-screen flex flex-col bg-white">
+     <ConsentModal />
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 shadow-sm">
         <div className="max-w-5xl mx-auto flex justify-between items-center">
