@@ -521,7 +521,7 @@
   "summary": {
     "total_experience": "5+ years",
     "projects_completed": 6,
-    "certifications_count": 8,
+    "certifications_count": 25,
     "key_strengths": [
       "Expert in credit scoring and financial analytics",
       "Production-grade ML systems at scale",
@@ -536,5 +536,49 @@
     "Phone_number":"+216 26045426",
     "Portfolio:":"https://meherms.github.io",
     "LinkedIn":"https://linkedin.com/in/meherms",
-    "GitHub:":"https://github.com/meherms"}
-}
+    "GitHub:":"https://github.com/meherms"
+  },
+  "HR_questions": {
+    "current_salary": "$1,500/month (full remote position)",
+    "expected_salary": "Full remote: $1,500/month. Partial remote or office-based: varies based on location and cost of living",
+    "relocation_remote": "I can relocate. Remote work is fine for me.",
+    "notice_period": "Immediately available",
+    "visa_sponsorship": "No visa currently. I require sponsorship.",
+    "employment_gaps": "My previous company went bankrupt in January 2026. I used that time productively—built personal projects (quizz-app, MSrobot(this one you use now)), pursued claude certifications, and deepened my AI knowledge. Not idle time; deliberate skill development.",
+    "reason_for_leaving": "Company closure due to bankruptcy. It was a business decision, not performance-related.",
+    "contract_preference": "Open to any contract type, but I prefer permanent roles. I'm not someone who job-hops; I value stability and long-term growth.",
+    "company_size_preference": "Any size, but I lean toward scale-ups or enterprise. Both have clear missions and resources to execute them.",
+    "team_size": "5–10 people reporting to me or collaborating directly would be ideal.",
+    "home_office_setup": "Yes, fully equipped. I've worked fully remote for 5 years (post-pandemic), so I have the discipline and setup down.",
+    "feedback_style": "Both. Real-time conversations keep things moving; formal reviews document progress and growth.",
+    "conflict_resolution": "I don't argue much. I let my work speak first. If I'm wrong, I accept it, apologize, and fix it immediately. I keep things professional—nothing personal in work.",
+    "layoff_history": "Yes, my company went bankrupt in January 2026, and we were all laid off. Not performance-related—pure business circumstances.",
+    "benefits_priority": "Project impact and sustainability matter most to me. Benefits are secondary—they keep me comfortable and motivated to stay, but they don't drive my decision.",
+    "travel_willingness": "Yes, I'm open to travel anywhere.",
+    "onboarding_timeline": "Two weeks minimum for intense onboarding. First two weeks should be deep—fully understand the project, team, and systems. Rushing this risks misunderstandings and wasted time later. After that, I ramp up to full productivity.",
+    "work_life_balance": "During work hours, I'm 100% focused. After work, I recharge two ways: time with friends and family, or time at my family farm. Fresh air and nature really refresh the mind—essential for IT work.",
+    "availability_obligations": "Totally free and available. No caregiving or other commitments that would limit my availability.",
+    "long_term_commitment": "Sustainability of the mission, long-term vision, a strong team, and the ability to deliver quality work. If these align, I stay and grow.",
+    "references": "Yes, absolutely. You can contact my previous CEO, Mr. Evangelos Papadopoulos, directly at evangelos@trident-ai.net. I can also provide references from colleagues—just ask me and I'll connect you.",
+    "background_check": "Yes, no problem at all. I'm comfortable with background checks and any screening process.",
+    "communication_tools": "Teams, email, video calls, and phone. I'm flexible with other tools—no concerns.",
+    "timezone_collaboration": "I'm in the Tunisia timezone. If required, I'm flexible with different timezones for meetings and collaboration.",
+    "side_projects": "No side projects or freelance work that would conflict with this role.",
+    "non_compete": "Yes, I'm comfortable signing NDA and non-compete agreements.",
+    "learning_development": "Technology and AI move fast, so continuous learning is essential to me. I value companies that support professional development—online courses, certifications, workshops, technical conferences. I'm self-driven and learn independently, but a learning budget or dedicated time accelerates growth.",
+    "tools_stack": "I adapt quickly to new tools and technologies. My background spans AI, ML, finance, cloud platforms, LLMs, development, and MLOps—so I'm comfortable picking up new stacks fast.",
+    "documentation": "Documentation is non-negotiable. Project docs, process docs, code comments—without them, everything becomes chaos and knowledge gets lost. I treat it as part of the deliverable, not an afterthought.",
+    "mentoring": "Yes, I've mentored colleagues before and I'm happy to help with onboarding and knowledge sharing.",
+    "performance_metrics": "Happy client comes first. Then project quality, then low-level metrics like model accuracy and delivery timelines. Client satisfaction drives everything else.",
+    "flexibility": "Absolutely. Technology evolves, requirements change, and we need to stay updated and adaptable. I'm comfortable wearing multiple hats and learning new things on the job.",
+    "negotiation_style": "I'm open to reasonable negotiation. Salary should reflect the company's values and my experience and skills—fair alignment on both sides.",
+    "company_culture_fit": "Red flags for me: racism, gender inequality, illegal activities, and lack of respect. I need an ethical, inclusive workplace where people are treated with dignity.",
+    "transparency": "If I disagree with a decision, I'll explain my perspective clearly and professionally. Then I respect the authority's decision and move forward. But if the decision is a red flag—something unethical or harmful—I'll raise concerns and, if unresolved, I'll leave.",
+    "availability_urgency": "Yes, I'm flexible. If there are urgent deadlines or unexpected needs, I can adjust and work extra hours when necessary.",
+    "equipment_setup": "I need a company laptop/PC. If that's not immediately available, I can temporarily work with my own equipment.",
+    "security_protocols": "Absolutely. In fintech, security is critical. I'm comfortable following strict protocols—password management, VPN, secure data handling, compliance requirements.",
+    "career_progression": "In 5–10 years, I see myself as a CTO or technical leader. I want deeper expertise, more responsibility, and the ability to set technical direction and mentor a team. Growth is important to me.",
+    "deal_breakers": "Same as my red flags: unethical behavior, discrimination, illegal activities, or lack of respect. Also, if the mission becomes unsustainable or the team becomes dysfunctional, I won't stay just for a paycheck. I need to believe in what I'm building."
+  }
+}  
+
