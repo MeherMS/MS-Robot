@@ -600,8 +600,8 @@ Located at `backend/kb/meher_kb.json`
   ],
   "experience": [
     {
-      "id": "devoteam_ksa",
-      "company": "Devoteam Middle East",
+      "id": "SGI",
+      "company": "Smartgreeninvest",
       "role": "Senior Data Scientist",
       "location": "KSA",
       "duration": "Current",
