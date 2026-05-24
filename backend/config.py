@@ -108,7 +108,9 @@ DOMAIN_KEYWORDS = {
     "mistral", "gemini", "llm", "ai", "machine learning", "data science",
     "agent", "copilot", "scoring", "underwriting", "modeling",
     # Project names (add as needed)
-    "loan", "portfolio", "compliance", "regulatory", "projects", "experience", "skills", "tell me about", "what have you", "what did you"
+    "loan", "portfolio", "compliance", "regulatory", "projects", "experience", "skills", "tell me about", "what have you", "what did you",
+    # Work/role related (NEW)
+    "role", "position", "job", "worked", "worked at", "company", "Trident-ai"
 }
 
 # ============================================================================
