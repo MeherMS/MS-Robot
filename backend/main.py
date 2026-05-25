@@ -26,7 +26,8 @@ file_executor = ThreadPoolExecutor(max_workers=2)
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins (restrict in production)
+    allow_origins=["https://ms-robot.vercel.app",  # Production frontend
+        "http://localhost:3000" ],       # Local development"],  # Allow all origins (restrict in production)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -81,6 +82,58 @@ def save_conversation_to_mongodb(session_id: str, message: str, response_text: s
         # Silently fail - don't break the chat
         print(f"[MONGODB] ⚠️ Save failed (ignored): {str(e)}")
 
+# Input validation function
+def validate_input(message: str, max_length: int = 500) -> tuple[bool, str]:
+    """
+    Validate user input for chat.
+    Returns: (is_valid, cleaned_message_or_error_message)
+    """
+    # Check if empty
+    if not message or not message.strip():
+        return False, "Message cannot be empty"
+    
+    # Clean whitespace
+    cleaned = message.strip()
+    
+    # Check max length
+    if len(cleaned) > max_length:
+        return False, f"Message exceeds {max_length} character limit"
+    
+    # Check for null bytes (security)
+    if '\x00' in cleaned:
+        return False, "Invalid characters detected in message"
+    
+    return True, cleaned
+
+# Security headers middleware
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """
+    Add security headers to all responses.
+    Protects against XSS, clickjacking, MIME sniffing, etc.
+    """
+    response = await call_next(request)
+    
+    # Prevent XSS attacks
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    
+    # Prevent MIME type sniffing
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    
+    # Prevent framing attacks (clickjacking)
+    response.headers["X-Frame-Options"] = "DENY"
+    
+    # Content Security Policy (basic, allow only self + API)
+    response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' https://cdn.jsdelivr.net data:"
+    
+    # Referrer policy (privacy)
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    
+    # Permissions policy (prevent abuse of device features)
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+    
+    return response
+
 
 @app.get("/health")
 async def health_check(request: Request):
@@ -123,19 +176,29 @@ async def chat(request: Request, payload: dict):
     # Get client IP and check token limit
     client_ip = get_client_ip(request)
     limit_status = token_limiter.check_and_increment(client_ip)
+    # ===== ADD BURST LIMIT CHECK =====
+    burst_allowed, burst_message = token_limiter.check_burst_limit(client_ip)
+    if not burst_allowed:
+        return {
+            "error": burst_message,
+            "quota": limit_status,
+        }
     
     # Extract request data
-    message = payload.get("message", "").strip()
+    raw_message = payload.get("message", "")
     tone = payload.get("tone", "formal")
     session_id = payload.get("session_id", client_ip)
     consent_given = payload.get("consent_given", False)
     
-    # Validate input
-    if not message:
+    # Validate input (enhanced validation)
+    is_valid, validation_result = validate_input(raw_message)
+    if not is_valid:
         return {
-            "error": "Message cannot be empty",
+            "error": validation_result,
             "quota": limit_status,
         }
+    
+    message = validation_result  # Use cleaned message
     
     try:
         # Check if token limit reached BEFORE processing

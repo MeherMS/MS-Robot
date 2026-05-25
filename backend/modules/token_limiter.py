@@ -20,6 +20,8 @@ class TokenLimiter:
         # Store: {ip_address: {date: YYYY-MM-DD, count: int}}
         self.usage: Dict[str, Dict] = {}
         self._lock = threading.Lock()  # Thread-safe
+        # Store request timestamps for burst limiting: {ip: [timestamp1, timestamp2, ...]}
+        self.burst_timestamps: Dict[str, list] = {}
 
     def _get_today(self) -> str:
         """Get today's date as string (YYYY-MM-DD)"""
@@ -121,7 +123,40 @@ class TokenLimiter:
                 "remaining": self.daily_limit - count,
                 "reset_time": (datetime.utcnow() + timedelta(days=1)).isoformat(),
             }
+            
+    def check_burst_limit(self, ip_address: str, max_requests: int = 10, window_seconds: int = 60) -> Tuple[bool, str]:
+        """
+        Check if IP exceeded burst limit (e.g., 10 msgs per 60 seconds).
+        
+        Returns:
+            (is_allowed, status_message)
+        """
+        now = datetime.utcnow()
+        window_start = now - timedelta(seconds=window_seconds)
 
+        with self._lock:
+            # Initialize if new IP
+            if ip_address not in self.burst_timestamps:
+                self.burst_timestamps[ip_address] = []
+
+            # Clean old timestamps (older than window)
+            self.burst_timestamps[ip_address] = [
+                ts for ts in self.burst_timestamps[ip_address]
+                if ts > window_start
+            ]
+
+            # Get current count in window
+            current_count = len(self.burst_timestamps[ip_address])
+
+            # If at limit, reject
+            if current_count >= max_requests:
+                return False, f"Rate limit: max {max_requests} messages per {window_seconds} seconds. Wait before retrying."
+
+            # Add current timestamp
+            self.burst_timestamps[ip_address].append(now)
+            new_count = current_count + 1
+
+            return True, f"Ok ({new_count}/{max_requests} in last minute)"
 
 # Singleton instance (shared across requests)
 token_limiter = TokenLimiter(daily_limit=100)
