@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useChat } from '@/hooks/useChat'
-import { getKBStats } from '@/utils/api'
+
 import MessageList from './MessageList'
 import ChatInput from './ChatInput'
 import ConsentModal from './ConsentModal'
@@ -12,19 +12,7 @@ export default function ChatContainer() {
   const [kbStats, setKbStats] = useState(null)
   const [tone, setTone] = useState('formal')
 
-  // Fetch KB stats on mount
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const stats = await getKBStats()
-        setKbStats(stats)
-      } catch (err) {
-        console.error('Failed to fetch KB stats:', err)
-      }
-    }
-
-    fetchStats()
-  }, [])
+  
 
   const handleSendMessage = async (message) => {
     try {
@@ -39,7 +27,7 @@ export default function ChatContainer() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-white">
+    <div className="flex flex-col flex-1 bg-white overflow-hidden">
      <ConsentModal />
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 shadow-sm">
@@ -78,7 +66,7 @@ export default function ChatContainer() {
       )}
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full">
+      <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full overflow-y-auto">
         <MessageList
           messages={messages}
           onSelectFollowup={handleSelectFollowup}
@@ -93,16 +81,7 @@ export default function ChatContainer() {
         />
       </div>
 
-      {/* Footer with KB Stats */}
-      <div className="bg-gray-50 border-t border-gray-200 p-3 text-xs text-gray-600 text-center">
-        {kbStats ? (
-          <span>
-            📚 KB: {kbStats.total_projects} projects • {kbStats.total_experiences} experiences • Last updated: {kbStats.last_updated}
-          </span>
-        ) : (
-          <span>Loading KB info...</span>
-        )}
-      </div>
+      
     </div>
   )
 }
