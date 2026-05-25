@@ -87,15 +87,15 @@
       "keywords": ["regression", "price prediction", "web scraping", "92% accuracy", "automotive"]
     },
     {
-      "id": "portfolio_chatbot",
-      "title": "Portfolio Chatbot (Interactive)",
-      "description": "Hybrid BM25 + Cloudflare Workers AI chatbot for portfolio discovery on GitHub Pages. Uses Mistral-7B for free LLM inference at scale.",
-      "technologies": ["BM25", "Mistral-7B", "Cloudflare Workers", "JavaScript", "RAG"],
+      "id": "MSrobot",
+      "title": " AI assistant",
+      "description":"MSRobot is an interactive AI-powered assistant that represents Meher professionally and personally through conversational Q&A. Instead of browsing a static portfolio, visitors ask questions and receive clear, structured answers about experience, projects, and skills.", 
+      "technologies": ["GeminiAPI", "Mistral-7B", "Fast API", "NextJS", "git Actions"],
       "duration": "2024-Q4",
-      "outcome": "Deployment-ready architecture with free LLM inference",
+      "outcome": "Deployment-ready architecture ",
       "domain": "ai-infrastructure",
-      "keywords": ["chatbot", "bm25", "mistral", "cloudflare workers", "rag", "inference"],
-      "status": "nearly deployment-ready - awaiting actual Cloudflare Worker URL deployment"
+      "keywords": ["chatbot", "gemini", "mistral", "AI engineering", "rag"],
+      "status": "Production "
     }
   ],
   "experience": [
@@ -443,14 +443,176 @@
     {
       "name": "AWS Cloud Quest: Cloud Practitioner",
       "issuer": "Amazon Web Services"
+    },
+    {
+    "name": "AI Fluency: Framework & Foundations",
+    "issuer": "Anthropic academy",
+    "enrolled": "2026-May-06",
+    "issued": "2026-May-07"
+    },
+    {
+      "name": "Building with the Claude API",
+      "issuer": "Anthropic academy",
+      "enrolled": "2026-May-07",
+      "issued": null
+    },
+    {
+      "name": "Claude 101",
+      "issuer": "Anthropic academy",
+      "enrolled": "2026-Apr-11",
+      "issued": "2026-Apr-11"
+    },
+    {
+      "name": "Claude Code 101",
+      "issuer": "Anthropic academy",
+      "enrolled": "2026-Apr-14",
+      "issued": "2026-Apr-14"
+    },
+    {
+      "name": "Claude Code in Action",
+      "issuer": "Anthropic academy",
+      "enrolled": "2026-Mar-15",
+      "issued": "2026-May-05"
+    },
+    {
+      "name": "Introduction to Claude Cowork",
+      "issuer": "Anthropic academy",
+      "enrolled": "2026-Apr-09",
+      "issued": "2026-Apr-11"
+    },
+    {
+    "name": "Model Armor: Securing AI Deployments",
+    "issuer": "Google Cloud",
+    "enrolled": "2025-Oct-26",
+    "issued": null
+    },
+    {
+      "name": "Build and Deploy Machine Learning Solutions on Vertex AI",
+      "issuer": "Google Cloud",
+      "enrolled": "2025-Sep-30",
+      "issued": null
+    },
+    {
+      "name": "Introduction to Security in the World of AI",
+      "issuer": "Google Cloud",
+      "enrolled": "2025-Sep-29",
+      "issued": "2025-Sep-29"
+    },
+    {
+      "name": "Responsible AI for Developers: Privacy & Safety",
+      "issuer": "Google Cloud",
+      "enrolled": "2025-Sep-28",
+      "issued": "2025-Sep-29"
+    },
+    {
+      "name": "Responsible AI for Developers: Interpretability & Transparency",
+      "issuer": "Google Cloud",
+      "enrolled": "2025-Sep-25",
+      "issued": "2025-Sep-28"
+    },
+    {
+      "name": "Responsible AI for Developers: Fairness & Bias",
+      "issuer": "Google Cloud",
+      "enrolled": "2025-May-02",
+      "issued": "2025-Sep-25"
+    },
+    {
+      "name": "Inspect Rich Documents with Gemini Multimodality and Multimodal RAG",
+      "issuer": "Google Cloud",
+      "enrolled": "2025-Jan-28",
+      "issued": "2025-Sep-30"
+    },
+    {
+      "name": "Machine Learning Operations (MLOps) with Vertex AI: Model Evaluation",
+      "issuer": "Google Cloud",
+      "enrolled": "2025-Jan-17",
+      "issued": "2025-May-02"
+    },
+    {
+      "name": "Machine Learning Operations (MLOps) for Generative AI",
+      "issuer": "Google Cloud",
+      "enrolled": "2025-Jan-17",
+      "issued": "2025-Jan-17"
+    },
+    {
+      "name": "Vector Search and Embeddings",
+      "issuer": "Google Cloud",
+      "enrolled": "2025-Jan-16",
+      "issued": "2025-Jan-28"
+    },
+    {
+      "name": "Introduction to Vertex AI Studio",
+      "issuer": "Google Cloud",
+      "enrolled": "2024-Nov-27",
+      "issued": "2024-Nov-27"
+    },
+    {
+      "name": "Create Image Captioning Models",
+      "issuer": "Google Cloud",
+      "enrolled": "2024-Nov-27",
+      "issued": "2024-Nov-27"
+    },
+    {
+      "name": "Transformer Models and BERT Model",
+      "issuer": "Google Cloud",
+      "enrolled": "2024-Nov-27",
+      "issued": "2024-Nov-27"
+    },
+    {
+      "name": "Encoder-Decoder Architecture",
+      "issuer": "Google Cloud",
+      "enrolled": "2024-Nov-27",
+      "issued": "2024-Nov-27"
+    },
+    {
+      "name": "Attention Mechanism",
+      "issuer": "Google Cloud",
+      "enrolled": "2024-Nov-27",
+      "issued": "2024-Nov-27"
+    },
+    {
+      "name": "Introduction to Image Generation",
+      "issuer": "Google Cloud",
+      "enrolled": "2024-Nov-27",
+      "issued": "2024-Nov-27"
+    },
+    {
+      "name": "Responsible AI: Applying AI Principles with Google Cloud",
+      "issuer": "Google Cloud",
+      "enrolled": "2024-Nov-25",
+      "issued": "2024-Nov-25"
+    },
+    {
+      "name": "Prompt Design in Agent Platform",
+      "issuer": "Google Cloud",
+      "enrolled": "2024-Nov-20",
+      "issued": "2024-Nov-23"
+    },
+    {
+      "name": "Introduction to Responsible AI",
+      "issuer": "Google Cloud",
+      "enrolled": "2024-Nov-19",
+      "issued": "2024-Nov-19"
+    },
+    {
+      "name": "Introduction to Large Language Models",
+      "issuer": "Google Cloud",
+      "enrolled": "2024-Nov-19",
+      "issued": "2024-Nov-19"
+    },
+    {
+      "name": "Introduction to Generative AI",
+      "issuer": "Google Cloud",
+      "enrolled": "2024-Nov-19",
+      "issued": "2024-Nov-19"
+    },
+    {
+      "full certifications bages":"https://www.credly.com/users/meher-selmi"
     }
   ],
   "personal": {
     "pronouns ": "he/him/his",
-    "location": "Sbeitla, Kasserine, Tunisia",
-    "coordinates": {
-      "latitude": 35.25,
-      "longitude": 9.09
+    "location": "Sbeitla, Kasserine, Tunisia"
     },
     "personality_type": "ISTP-A (Virtuoso)",
     "personality_traits": {
@@ -496,14 +658,6 @@
       "Routine task engagement"
     ],
     "communication_style": "Prefers clear, simple language over formal phrasing. Direct, concise style sometimes omits details. Values practical implementations and transparent discussions.",
-    "contact": {
-      "phone": "+216 26 045 426",
-      "email": "selmi.ms1995@gmail.com",
-      "linkedin": "linkedin.com/in/meherms",
-      "github": "github.com/meherms",
-      "portfolio": "meherms.github.io"
-    }
-  },
   "languages": [
     {
       "language": "Arabic",
@@ -526,7 +680,7 @@
       "Expert in credit scoring and financial analytics",
       "Production-grade ML systems at scale",
       "Cloud architecture (AWS, GCP)",
-      "AI/LLM integration (LangChain, RAG, prompt engineering)",
+      "AI/LLM integration ( RAG, prompt engineering)",
       "Leadership and mentoring"
     ],
     "unique_value": "Combines deep technical expertise in ML and cloud computing with real-world fintech and sustainability domain experience, delivered in fast-paced startup environments. Pragmatic problem-solver with hands-on implementation focus."
