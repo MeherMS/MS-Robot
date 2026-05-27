@@ -1,8 +1,8 @@
 # MSRobot 🤖
 
-An AI-powered portfolio assistant that represents you through conversational Q&A. Instead of browsing a static portfolio, visitors ask questions and receive clear, sourced answers about your experience, projects, and skills.
+An AI-powered assistant that represents you through conversational Q&A. Instead of browsing a static portfolio, visitors ask questions and receive clear, sourced answers about your experience, projects, and skills.
 
-**Live Demo:** [https://msrobot.vercel.app](https://msrobot.vercel.app)
+**Live Demo:** [https://msrobot.vercel.app](https://ms-robot.vercel.app)
 
 ---
 
@@ -35,23 +35,6 @@ An AI-powered portfolio assistant that represents you through conversational Q&A
 
 ## Features
 
-### 🎯 Core Features
-
-- **Hybrid Intelligence:** Combines a verified Knowledge Base (KB) with a Large Language Model (LLM) for intelligent responses
-- **3-Tier Routing:** Smart question classification (personal, domain, ambiguous) with appropriate responses
-- **Transparent Attribution:** Clearly distinguishes between KB knowledge ("I did this") and LLM inference ("I could do this")
-- **Conversation Context:** Maintains conversation history within a session
-- **Tone Adaptation:** Formal (for recruiters) or casual (for peers) response styles
-- **Confidence Scoring:** Each response includes a confidence level (0.6-0.95)
-- **Source Citations:** Clickable links to projects and experiences mentioned
-- **Suggested Follow-ups:** Automatically generates 2-3 relevant next questions
-
-### 🛡️ Quality & Safety
-
-- **Token Limiting:** Per-IP daily quota (100 messages/day) to prevent abuse
-- **Error Handling:** Graceful fallbacks with user-friendly messages
-- **Soft Warnings:** Users warned at 80% quota utilization
-- **Rate Limiting:** Built-in protection for production use
 
 ### 🚀 Production Ready
 
@@ -60,6 +43,15 @@ An AI-powered portfolio assistant that represents you through conversational Q&A
 - **Global CDN:** Frontend cached globally for <1s page loads
 - **99.9% Uptime:** Cloud infrastructure with SLA guarantees
 - **Responsive Design:** Works perfectly on desktop, tablet, mobile
+
+### 🛡️ Quality & Safety
+
+- **Privacy-First GDPR Architecture:** Integrates a zero-PII (Personally Identifiable Information) logging pipeline that tracks conversation analytics and explicit user consent state without capturing or storing sensitive user data.
+- **Token Limiting:** Per-IP daily quota (100 messages/day) to prevent abuse
+- **Error Handling:** Graceful fallbacks with user-friendly messages
+- **Soft Warnings:** Users warned at 80% quota utilization
+- **Rate Limiting:** Built-in protection for production use
+
 
 ---
 
@@ -79,10 +71,15 @@ An AI-powered portfolio assistant that represents you through conversational Q&A
 - **HTTP Client:** axios
 - **Deployment:** [Vercel](https://vercel.com/) (Free tier)
 
+### Database
+- **Mongodb:** https://www.mongodb.com/products/platform/atlas-database
+
+
 ### Additional Tools
 - **Version Control:** GitHub
 - **CI/CD:** GitHub Actions (automated deployment)
 - **Container:** Docker (for backend)
+
 
 ---
 
@@ -135,67 +132,10 @@ Frontend - Display with sources, confidence, follow-ups
                (Auto CI/CD)
 ```
 
-### 3-Tier Question Routing
 
-```
-User Question
-    ↓
-Tier 1: Intent Detection
-├─ Personal keywords? → "Ask Meher directly"
-├─ Domain keywords? → Check KB (Tier 2)
-└─ Ambiguous? → Use LLM (confidence 0.6)
-    ↓
-Tier 2: KB Retrieval
-├─ Score > 0.75? → Direct KB (confidence 0.95)
-├─ Score 0.4-0.75? → Blended KB+LLM (confidence 0.7)
-└─ Score < 0.4? → LLM-only (confidence 0.6)
-    ↓
-Tier 3: Response Builder
-└─ Format response with sources, confidence, follow-ups
-```
 
 ---
 
-## Project Phases
-
-### ✅ Phase 1: Foundation (Complete)
-- KB JSON structure finalized
-- System prompt template created
-- FastAPI skeleton setup
-- Sample data populated
-
-### ✅ Phase 2: Backend (Complete)
-- Classification module (intent detection)
-- KB retrieval (keyword search)
-- LLM client (mock → Ollama → Gemini migration)
-- Context manager (conversation history)
-- Response formatter
-- `/chat` endpoint implemented
-
-### ✅ Phase 3: Frontend (Complete)
-- React/Next.js chat UI
-- Message display with markdown
-- Confidence badges
-- Source links
-- Suggested follow-ups
-- Tone selector
-- Error handling
-
-### ✅ Phase 4: LLM Integration (Complete)
-- **Migration:** Ollama/Mistral 7B → Google Gemini 2.5 Flash
-- **Token Limiting:** Per-IP daily quota (100 msgs/day)
-- **Soft Warnings:** At 80% quota
-- **Hard Blocking:** At 100% quota
-- **Cost:** Free tier (1M tokens/month)
-
-### ✅ Phase 5: Deployment (Complete)
-- Backend deployed to Render (Docker container)
-- Frontend deployed to Vercel (Next.js CDN)
-- Auto-deployment on push to GitHub
-- Production URLs live
-- All endpoints verified
-
----
 
 ## Getting Started
 
@@ -206,7 +146,8 @@ Tier 3: Response Builder
 - npm or yarn (for frontend)
 - Git
 - Gemini API key (free from [ai.google.dev](https://ai.google.dev/))
-
+- MongoDB
+-  database
 ### Local Development
 
 #### Step 1: Clone the Repository
@@ -373,34 +314,14 @@ frontend/
 #### LLM Settings
 ```python
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_MODEL = "gemini-1.5-flash"
+GEMINI_MODEL = "gemini-2.5-flash"
 MAX_RESPONSE_TOKENS = 1024
-```
-
-#### KB Thresholds
-```python
-KB_HIGH_THRESHOLD = 0.4         # > 40% match → Direct KB (0.95 confidence)
-KB_MEDIUM_THRESHOLD = 0.15      # 15-40% match → Blended (0.70 confidence)
-KB_LOW_THRESHOLD = 0.0          # < 15% match → LLM-only (0.60 confidence)
-```
-
-#### Confidence Scores
-```python
-CONF_KB_HIGH = 0.95             # Direct KB response
-CONF_KB_MEDIUM = 0.7            # KB + LLM blend
-CONF_LLM_ONLY = 0.6             # LLM-only response
 ```
 
 #### Token Limiting
 ```python
 DAILY_MESSAGE_LIMIT = 100       # Hard limit per IP
 WARNING_THRESHOLD = 80          # Soft warning (80% of limit)
-```
-
-#### Keywords
-```python
-PERSONAL_KEYWORDS = ["hobby", "music", "family", "personal", "favorite", ...]
-DOMAIN_KEYWORDS = ["build", "credit", "esg", "fintech", "develop", ...]
 ```
 
 ### Frontend Configuration (`.env.local`)
@@ -414,6 +335,8 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 **Backend (.env):**
 ```
 GEMINI_API_KEY=AIzaSyXXXXXXXXXX...your_key...XXXX
+MONGODB_URI=mongodb+srv://db_user:StrongPassword123@cluster0.example.mongodb.net/myDatabase?retryWrites=true&w=majority
+
 ```
 
 **Frontend (.env.production):**
@@ -487,150 +410,10 @@ Health check endpoint.
 }
 ```
 
----
-
-### GET /test-llm
-
-Test LLM connectivity.
-
-**Response:**
-```json
-{
-  "status": "ok",
-  "response": "2 + 2 = 4",
-  "model": "gemini-1.5-flash"
-}
-```
 
 ---
 
-### GET /kb/stats
 
-Get knowledge base statistics.
-
-**Response:**
-```json
-{
-  "total_projects": 3,
-  "total_experiences": 2,
-  "total_skills": 10,
-  "last_updated": "2026-05-01",
-  "kb_version": "1.0"
-}
-```
-
----
-
-## How It Works
-
-### Question Classification (3-Tier Routing)
-
-#### Tier 1: Intent Detection
-The system detects if a question is:
-- **Personal:** About your life, hobbies, interests
-  - Keywords: "hobby", "music", "family", "personal", "favorite"
-  - Response: "Ask Meher directly" + contact link
-  
-- **Domain:** About your work, projects, technical skills
-  - Keywords: "credit", "ESG", "fintech", "build", "develop"
-  - Response: KB retrieval (Tier 2)
-  
-- **Ambiguous:** General or unclear
-  - Response: LLM-only (confidence 0.6)
-
-#### Tier 2: KB Relevance Scoring
-If domain keywords detected, search KB with keyword matching:
-
-```
-Score = (matching keywords) / (total keywords in entry)
-
-Thresholds:
-  Score > 0.75 → Direct KB (confidence 0.95)
-  Score 0.4-0.75 → Blended KB+LLM (confidence 0.70)
-  Score < 0.4 → LLM-only (confidence 0.60)
-```
-
-#### Tier 3: Response Building
-Combine KB response with LLM reasoning, add sources, suggest follow-ups.
-
-### Example Flow
-
-**User:** "Did you work with credit scoring?"
-
-```
-Tier 1: Domain keywords detected ("credit", "scoring")
-  ↓
-Tier 2: KB search → Found "credit_esg_reporting" project (score 0.82)
-  ↓
-Tier 3: Score > 0.75 → Direct KB response (confidence 0.95)
-  ↓
-Response: "Yes, I built Credit Score & ESG Report System..."
-          + Source: credit_esg_reporting
-          + Confidence: 95%
-          + Follow-ups: [3 questions]
-```
-
----
-
-## Knowledge Base
-
-### KB Structure
-
-Located at `backend/kb/meher_kb.json`
-
-```json
-{
-  "metadata": {
-    "last_updated": "2026-05-01",
-    "version": "1.0"
-  },
-  "projects": [
-    {
-      "id": "loan_underwriting_copilot",
-      "title": "Loan Underwriting Copilot",
-      "description": "Automated loan processing system",
-      "technologies": ["LangGraph", "GPT-4o", "Pydantic"],
-      "duration": "2024-Q3",
-      "outcome": "Reduced manual review time by 40%",
-      "domain": "fintech",
-      "keywords": ["agent", "llm", "fintech", "automation", ...],
-      "link": "https://github.com/meherms/loan-copilot"
-    },
-    ...
-  ],
-  "experience": [
-    {
-      "id": "SGI",
-      "company": "Smartgreeninvest",
-      "role": "Senior Data Scientist",
-      "location": "KSA",
-      "duration": "Current",
-      "key_achievements": [...],
-      "keywords": ["senior", "data scientist", "devoteam", ...],
-      ...
-    },
-    ...
-  ],
-  "skills": [
-    {
-      "category": "Generative AI & LLMs",
-      "items": [
-        {"name": "LangChain/LangGraph", "proficiency": "expert"},
-        ...
-      ]
-    },
-    ...
-  ],
-  "personal": {
-    "location": "Tunisia",
-    "personality_traits": ["Direct", "Casual", "Technical"],
-    "contact": {
-      "email": "contact@meherms.com",
-      "github": "https://github.com/meherms"
-    }
-  }
-}
-```
 
 ### How to Update KB
 
@@ -723,13 +506,7 @@ Visit https://msrobot.vercel.app (should load in <1s)
 
 ## Troubleshooting
 
-### Backend Returns 500 Error
 
-**Check logs:**
-```bash
-# For Render, check dashboard logs or:
-curl https://ms-robot.onrender.com/health
-```
 
 **Common issues:**
 - Invalid GEMINI_API_KEY
@@ -738,49 +515,6 @@ curl https://ms-robot.onrender.com/health
 
 **Solution:** Check Render dashboard → Logs tab
 
-### Frontend Shows "Cannot Connect to Backend"
-
-**Causes:**
-- Backend is sleeping (Render free tier sleeps after 15 min inactivity)
-- Network issue
-- CORS misconfiguration
-
-**Solution:**
-- Wait 30 seconds (backend wakes up)
-- Check `NEXT_PUBLIC_API_URL` in `.env.production`
-- Verify backend is running: `curl https://ms-robot.onrender.com/health`
-
-### Daily Quota Reached (100 Messages)
-
-**Message:** "Daily limit reached (100 messages). Resets at midnight UTC."
-
-**Solution:**
-- Wait until midnight UTC (automatic reset)
-- Or edit `DAILY_MESSAGE_LIMIT` in `backend/config.py` and redeploy
-
----
-
-## Future Enhancements
-
-### Short-term (2-4 weeks)
-- [ ] Persistent chat history (localStorage)
-- [ ] User authentication
-- [ ] Dark mode
-- [ ] Analytics dashboard
-
-### Medium-term (1-2 months)
-- [ ] Semantic search (embeddings instead of keywords)
-- [ ] Feedback loop (learn from "wrong answer" feedback)
-- [ ] Multi-language support (Arabic, French)
-- [ ] Voice input/output
-
-### Long-term (3+ months)
-- [ ] Video/avatar integration
-- [ ] White-label API
-- [ ] Advanced RAG (retrieval-augmented generation)
-- [ ] Custom fine-tuned LLM
-
----
 
 ## Testing
 
@@ -889,5 +623,5 @@ For issues, questions, or feature requests:
 
 ---
 
-**Last Updated:** May 10, 2026  
+**Last Updated:** May 27, 2026  
 **Status:** ✅ Production Live
