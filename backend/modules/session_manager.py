@@ -134,20 +134,16 @@ RESPONSE RULES:
         
         return prompt
 
-    def send_message(self, session_id: str, user_message: str, tone: str = "formal") -> dict:
+    def send_message(self, session_id: str, user_message: str, tone: str = "formal", api_key: Optional[str] = None) -> dict:
         """
-        Send message to persistent chat session with API key rotation
-        
-        Flow:
-        1. Get/create session
-        2. Try with current key
-        3. If quota exceeded, switch to next key and retry
-        4. If all keys exhausted, return error
+        Send message to persistent chat session. 
+        Supports external API key rotation orchestration from main.py if api_key is provided.
         
         Args:
             session_id: Session identifier
             user_message: User's question/message
             tone: "formal" or "casual"
+            api_key: Explicit Gemini API key passed from external router loop
         
         Returns:
             Dict with response, status, tokens, etc.
@@ -161,6 +157,7 @@ RESPONSE RULES:
                     "success": False,
                     "response": "",
                     "error": "Session not found and could not be created",
+                    "error_type": "other",
                     "tokens_used": 0,
                     "session_id": session_id,
                 }
@@ -171,6 +168,7 @@ RESPONSE RULES:
                     "success": False,
                     "response": "",
                     "error": "Message cannot be empty",
+                    "error_type": "invalid_input",
                     "tokens_used": 0,
                     "session_id": session_id,
                 }
@@ -178,7 +176,57 @@ RESPONSE RULES:
             print(f"[SessionManager] 📤 Sending message to session {session_id}")
             print(f"[SessionManager] User: {user_message[:50]}...")
             
-            # Try to send message (with key rotation on quota error)
+            # --- CASE 1: Explicit API key provided by main.py's rotation loop ---
+            if api_key:
+                genai.configure(api_key=api_key)
+                try:
+                    response = chat.send_message(user_message, stream=False)
+                    assistant_response = response.text.strip()
+                    
+                    if not assistant_response:
+                        return {
+                            "success": False,
+                            "response": "",
+                            "error": "Empty response from Gemini",
+                            "error_type": "other",
+                            "tokens_used": 0,
+                            "session_id": session_id,
+                        }
+                    
+                    # Track activity and estimate tokens
+                    tokens_used = self._estimate_tokens(user_message + assistant_response)
+                    if session_id in self.sessions:
+                        self.sessions[session_id]["last_activity"] = datetime.now()
+                    
+                    return {
+                        "success": True,
+                        "response": assistant_response,
+                        "error": None,
+                        "tokens_used": tokens_used,
+                        "session_id": session_id,
+                    }
+                except Exception as e:
+                    error_str = str(e)
+                    error_str_lower = error_str.lower()
+                    error_type = "other"
+                    
+                    # Categorize Gemini exceptions so main.py knows how to handle the key state
+                    if "429" in error_str or "resource_exhausted" in error_str_lower or "quota" in error_str_lower:
+                        if "daily" in error_str_lower or "limit exceeded" in error_str_lower:
+                            error_type = "daily_quota"
+                        else:
+                            error_type = "rpm_limit"
+                            
+                    return {
+                        "success": False,
+                        "response": "",
+                        "error": error_str,
+                        "error_type": error_type,
+                        "tokens_used": 0,
+                        "session_id": session_id,
+                    }
+            
+            # --- CASE 2: Fallback to internal session manager rotation loop ---
             return self._send_with_key_rotation(chat, user_message, session_id)
         
         except Exception as e:
@@ -189,10 +237,10 @@ RESPONSE RULES:
                 "success": False,
                 "response": "",
                 "error": f"Unexpected error: {error_str[:100]}",
+                "error_type": "other",
                 "tokens_used": 0,
                 "session_id": session_id,
             }
-    
     def _send_with_key_rotation(self, chat, user_message: str, session_id: str) -> dict:
         """
         Send message with automatic key rotation on quota exceeded

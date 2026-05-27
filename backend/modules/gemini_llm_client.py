@@ -172,57 +172,83 @@ class GeminiLLMClient:
                 "tokens_used": total_tokens,
             }
 
+
         except Exception as e:
             error_str = str(e)
+            error_type = "other"  # Default
             
-            # ===== QUOTA EXCEEDED =====
-            if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str or "quota" in error_str.lower():
-                print(f"[LLM] ⚠️ QUOTA EXCEEDED: {error_str}")
-                return {
-                    "success": False,
-                    "response": "",
-                    "error": "🚨 Gemini API daily quota exceeded. Please try again later or upgrade your plan.",
-                    "tokens_used": 0,
-                }
+            # ===== QUOTA EXCEEDED (RPM LIMIT - temporary) =====
+            if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+                # Check if it's RPM (temporary) or Daily Quota (permanent)
+                if any(keyword in error_str.lower() for keyword in 
+                       ["rate limit", "too many requests", "requests-per-minute"]):
+                    error_type = "rpm_limit"  # Temporary
+                    print(f"[LLM] ⚠️ RPM LIMIT HIT: {error_str[:80]}")
+                    return {
+                        "success": False,
+                        "response": "",
+                        "error": "Rate limit hit. Trying another API key...",
+                        "tokens_used": 0,
+                        "error_type": "rpm_limit",
+                    }
+                else:
+                    # Likely daily quota
+                    error_type = "daily_quota"  # Permanent
+                    print(f"[LLM] 📅 DAILY QUOTA EXCEEDED: {error_str[:80]}")
+                    return {
+                        "success": False,
+                        "response": "",
+                        "error": "Daily API quota exhausted. Please try again after midnight UTC.",
+                        "tokens_used": 0,
+                        "error_type": "daily_quota",
+                    }
             
-            # ===== RATE LIMIT =====
+            # ===== RATE LIMIT (explicit) =====
             elif "RATE_LIMIT" in error_str:
-                print(f"[LLM] ⚠️ RATE LIMITED: {error_str}")
+                error_type = "rpm_limit"
+                print(f"[LLM] ⚠️ RATE LIMITED: {error_str[:80]}")
                 return {
                     "success": False,
                     "response": "",
-                    "error": "Rate limit reached. Please wait a moment and try again.",
+                    "error": "Rate limit hit. Trying another API key...",
                     "tokens_used": 0,
+                    "error_type": "rpm_limit",
                 }
             
             # ===== INVALID ARGUMENT =====
             elif "INVALID_ARGUMENT" in error_str:
-                print(f"[LLM] ❌ INVALID ARGUMENT: {error_str}")
+                error_type = "other"
+                print(f"[LLM] ❌ INVALID ARGUMENT: {error_str[:80]}")
                 return {
                     "success": False,
                     "response": "",
-                    "error": "Invalid request to Gemini API. Please try rephrasing your question.",
+                    "error": "Invalid request. Please try rephrasing your question.",
                     "tokens_used": 0,
+                    "error_type": "other",
                 }
             
             # ===== AUTHENTICATION FAILED =====
-            elif "UNAUTHENTICATED" in error_str:
-                print(f"[LLM] ❌ AUTHENTICATION FAILED: {error_str}")
+            elif "UNAUTHENTICATED" in error_str or "API_KEY" in error_str.upper():
+                error_type = "other"
+                print(f"[LLM] ❌ AUTH FAILED: {error_str[:80]}")
                 return {
                     "success": False,
                     "response": "",
-                    "error": "Gemini API authentication failed. Check your API key in .env file.",
+                    "error": "API authentication failed. Check your API keys.",
                     "tokens_used": 0,
+                    "error_type": "other",
                 }
             
             # ===== GENERIC ERROR =====
             else:
-                print(f"[LLM] ❌ GENERIC ERROR: {error_str}")
+                error_type = "other"
+                print(f"[LLM] ❌ ERROR: {error_str[:80]}")
                 return {
                     "success": False,
                     "response": "",
-                    "error": f"Gemini API error: {error_str}",
+                    "error": f"Unexpected error. Please try again.",
                     "tokens_used": 0,
+                    "error_type": "other",
                 }
     def _estimate_tokens(self, text: str) -> int:
         """

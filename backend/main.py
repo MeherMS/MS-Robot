@@ -6,6 +6,7 @@ from modules.session_manager import session_manager
 from modules.formatter import ResponseFormatter
 from modules.token_limiter import token_limiter
 from modules.token_limiter import token_limiter
+from modules.key_manager import key_manager
 from modules.logger import chat_logger
 from config import CONF_LLM_ONLY
 from datetime import datetime
@@ -163,20 +164,24 @@ async def kb_stats():
 @app.post("/chat")
 async def chat(request: Request, payload: dict):
     """
-    Simplified chat endpoint using SessionManager
+    Chat endpoint with multi-key rotation and smart error handling.
     
     Flow:
-    1. Check token limit (by IP)
-    2. Validate input
-    3. Get or create session
-    4. Send message to Gemini (with KB context)
+    1. Check token limit (daily quota per IP)
+    2. Check burst limit (10 msgs per 60 sec per IP)
+    3. Validate input
+    4. Try to send message with key rotation:
+       - If RPM limit → cooldown key, try next key
+       - If daily quota → mark exhausted, try next key
+       - If other error → fail immediately
     5. Format and return response
     """
     
     # Get client IP and check token limit
     client_ip = get_client_ip(request)
     limit_status = token_limiter.check_and_increment(client_ip)
-    # ===== ADD BURST LIMIT CHECK =====
+    
+    # Check burst limit
     burst_allowed, burst_message = token_limiter.check_burst_limit(client_ip)
     if not burst_allowed:
         return {
@@ -190,7 +195,7 @@ async def chat(request: Request, payload: dict):
     session_id = payload.get("session_id", client_ip)
     consent_given = payload.get("consent_given", False)
     
-    # Validate input (enhanced validation)
+    # Validate input
     is_valid, validation_result = validate_input(raw_message)
     if not is_valid:
         return {
@@ -200,84 +205,179 @@ async def chat(request: Request, payload: dict):
     
     message = validation_result  # Use cleaned message
     
-    try:
-        # Check if token limit reached BEFORE processing
-        if not limit_status["allowed"]:
-            return {
-                "response": f"⚠️ {limit_status['message']}",
-                "confidence": 0,
-                "kb_used": False,
-                "sources": [],
-                "suggested_followups": [],
-                "quota": limit_status,
-            }
-        
-        print(f"[CHAT] Session: {session_id}, Tone: {tone}, IP: {client_ip}")
-        print(f"[CHAT] Message: {message[:50]}...")
-        
-        # Send message to SessionManager
-        # SessionManager handles:
-        # - Persistent Gemini chat session
-        # - KB context in system instruction
-        # - Conversation history (auto-managed by Gemini)
-        llm_result = session_manager.send_message(
-            session_id=session_id,
-            user_message=message,
-            tone=tone,
-        )
-        
-        # Check if LLM call succeeded
-        if not llm_result["success"]:
-            return {
-                "response": f"❌ {llm_result['error']}",
-                "confidence": 0,
-                "kb_used": False,
-                "sources": [],
-                "suggested_followups": [],
-                "quota": limit_status,
-                "error": llm_result["error"],
-            }
-        
-        # Format response
-        formatter = ResponseFormatter()
-        formatted_response = formatter.format_response(
-            response_text=llm_result["response"],
-            confidence=CONF_LLM_ONLY,  # SessionManager handles KB internally
-            kb_used=True,  # SessionManager has KB context
-            sources=[],  # Gemini will cite KB in response text
-            suggested_followups=formatter.generate_followups(message, kb_match=None),
-        )
-        
-        # Add quota and session info
-        formatted_response["quota"] = limit_status
-        formatted_response["session_id"] = session_id
-        # Log to MongoDB if user consented
-        chat_logger.log_chat(
-            user_message=message,
-            assistant_response=llm_result["response"],
-            confidence=CONF_LLM_ONLY,
-            kb_used=True,
-            session_id=session_id,
-            tone=tone,
-            consent_given=consent_given,
-        )
-        
-        print(f"[CHAT] ✅ Response sent. Tokens: ~{llm_result['tokens_used']}. Quota: {limit_status['count']}/{limit_status['limit']}")
-        file_executor.submit(save_conversation_to_mongodb, session_id, message, llm_result["response"], CONF_LLM_ONLY, True, tone)
-
-        return formatted_response
-    
-    except Exception as e:
-        print(f"[ERROR] {str(e)}")
-        import traceback
-        traceback.print_exc()
-        
+    # Check if token limit reached BEFORE processing
+    if not limit_status["allowed"]:
         return {
-            "error": f"Server error: {str(e)}",
-            "response": None,
+            "response": f"⚠️ {limit_status['message']}",
+            "confidence": 0,
+            "kb_used": False,
+            "sources": [],
+            "suggested_followups": [],
             "quota": limit_status,
         }
-
+    
+    print(f"\n[CHAT] Session: {session_id}, Tone: {tone}, IP: {client_ip}")
+    print(f"[CHAT] Message: {message[:50]}...")
+    
+    # ============================================================
+    # KEY ROTATION LOOP - Try each available API key
+    # ============================================================
+    max_retries = key_manager.total_keys
+    attempt = 0
+    
+    while attempt < max_retries:
+        attempt += 1
+        
+        # Get current available key
+        key_info = key_manager.get_current_key()
+        
+        if key_info[0] is None:
+            # All keys unavailable (in cooldown or exhausted)
+            status = key_manager.get_status()
+            print(f"[KEY_ROTATION] All keys unavailable. Status: {status}")
+            
+            # Determine which error to show user
+            cooldown_keys = status["keys_in_cooldown"]
+            exhausted_keys = status["keys_daily_exhausted"]
+            
+            if exhausted_keys == key_manager.total_keys:
+                # All keys permanently exhausted
+                return {
+                    "response": "🚨 All API keys daily quota exceeded. Please try again after midnight UTC.",
+                    "error": "All keys quota exhausted",
+                    "confidence": 0,
+                    "kb_used": False,
+                    "sources": [],
+                    "suggested_followups": [],
+                    "quota": limit_status,
+                }
+            elif cooldown_keys > 0:
+                # All keys in cooldown (RPM limit)
+                return {
+                    "response": "⏱️ Rate limit hit. Please try again in a few moments.",
+                    "error": "All keys in cooldown",
+                    "confidence": 0,
+                    "kb_used": False,
+                    "sources": [],
+                    "suggested_followups": [],
+                    "quota": limit_status,
+                }
+            else:
+                # Generic unavailable
+                return {
+                    "response": "Please try again in a few moments.",
+                    "error": "All keys unavailable",
+                    "confidence": 0,
+                    "kb_used": False,
+                    "sources": [],
+                    "suggested_followups": [],
+                    "quota": limit_status,
+                }
+        
+        # Log attempt
+        print(f"[KEY_ROTATION] Attempt {attempt}/{max_retries} with key {key_info[1]}/{key_manager.total_keys}")
+        
+        # Send message to SessionManager with specific API key
+        try:
+            llm_result = session_manager.send_message(
+                session_id=session_id,
+                user_message=message,
+                tone=tone,
+                api_key=key_info[0],  # Pass the specific API key
+            )
+        except Exception as e:
+            print(f"[CHAT] Exception during send_message: {str(e)}")
+            llm_result = {
+                "success": False,
+                "error": str(e),
+                "error_type": "other",
+                "response": "",
+                "tokens_used": 0,
+            }
+        
+        # Check if successful
+        if llm_result["success"]:
+            # ✅ SUCCESS - Format and return response
+            print(f"[CHAT] ✅ Response sent with key {key_info[1]}. Tokens: ~{llm_result.get('tokens_used', 0)}")
+            
+            formatter = ResponseFormatter()
+            formatted_response = formatter.format_response(
+                response_text=llm_result["response"],
+                confidence=CONF_LLM_ONLY,
+                kb_used=True,
+                sources=[],
+                suggested_followups=formatter.generate_followups(message, kb_match=None),
+            )
+            
+            formatted_response["quota"] = limit_status
+            formatted_response["session_id"] = session_id
+            
+            # Log to chat logger
+            chat_logger.log_chat(
+                user_message=message,
+                assistant_response=llm_result["response"],
+                confidence=CONF_LLM_ONLY,
+                kb_used=True,
+                session_id=session_id,
+                tone=tone,
+                consent_given=consent_given,
+            )
+            
+            # Save to MongoDB (non-blocking)
+            file_executor.submit(
+                save_conversation_to_mongodb,
+                session_id, message, llm_result["response"],
+                CONF_LLM_ONLY, True, tone
+            )
+            
+            print(f"[CHAT] Quota: {limit_status['count']}/{limit_status['limit']}")
+            return formatted_response
+        
+        # ❌ FAILED - Check error type and decide whether to retry
+        error_type = llm_result.get("error_type", "other")
+        error_message = llm_result.get("error", "Unknown error")
+        
+        print(f"[KEY_ROTATION] Error type: {error_type} | Message: {error_message[:80]}")
+        
+        if error_type == "rpm_limit":
+            # Temporary: RPM limit exceeded
+            # Mark current key for cooldown and try next key
+            key_manager.mark_key_with_error("rpm_limit")
+            print(f"[KEY_ROTATION] RPM limit on key {key_info[1]}, rotating to next key...")
+            continue  # Try next iteration with different key
+            
+        elif error_type == "daily_quota":
+            # Permanent: Daily quota exhausted
+            # Mark current key as exhausted and try next key
+            key_manager.mark_key_with_error("daily_quota")
+            print(f"[KEY_ROTATION] Daily quota on key {key_info[1]}, rotating to next key...")
+            continue  # Try next iteration with different key
+            
+        else:
+            # Other errors (auth, invalid arg, etc.)
+            # Don't retry, return error immediately
+            print(f"[KEY_ROTATION] Non-recoverable error on key {key_info[1]}, not retrying")
+            return {
+                "response": f"❌ {error_message}",
+                "error": error_message,
+                "confidence": 0,
+                "kb_used": False,
+                "sources": [],
+                "suggested_followups": [],
+                "quota": limit_status,
+            }
+    
+    # All retries exhausted
+    print(f"[KEY_ROTATION] All {max_retries} key attempts failed")
+    return {
+        "response": "Please try again in a few moments.",
+        "error": "All API keys failed",
+        "confidence": 0,
+        "kb_used": False,
+        "sources": [],
+        "suggested_followups": [],
+        "quota": limit_status,
+    }
 
 @app.get("/test-llm")
 async def test_llm():
