@@ -447,6 +447,10 @@ async def debug_conversations(limit: int = 10):
     except Exception as e:
         return {"error": str(e)}
 
+
+# backend/main.py - Add new test endpoint
+
+
 @app.get("/debug/export-csv")
 async def export_conversations():
     """Export all conversations as CSV"""

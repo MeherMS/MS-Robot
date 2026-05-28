@@ -1,5 +1,4 @@
 # backend/modules/session_manager.py
-# backend/modules/session_manager.py
 
 import json
 import os
@@ -38,7 +37,7 @@ class SessionManager:
         self.sessions: Dict[str, Dict] = {}  # session_id → {chat, created_at, last_activity}
         self.session_timeout = timedelta(minutes=session_timeout_minutes)
         
-        # Key management (do NOT configure genai yet - will do per-key)
+        # Key management
         self.key_manager = key_manager
 
         # Model name for Gemini
@@ -67,7 +66,6 @@ class SessionManager:
         except Exception as e:
             print(f"[SessionManager] ❌ Error loading KB: {e}")
             raise
-
 
     def _build_system_prompt(self, tone: str = "formal") -> str:
         """
@@ -134,19 +132,21 @@ RESPONSE RULES:
         
         return prompt
 
+
+
     def send_message(self, session_id: str, user_message: str, tone: str = "formal", api_key: Optional[str] = None) -> dict:
         """
-        Send message to persistent chat session. 
-        Supports external API key rotation orchestration from main.py if api_key is provided.
+        Send message to persistent chat session.
+        Supports external API key rotation orchestration from main.py.
         
         Args:
             session_id: Session identifier
             user_message: User's question/message
             tone: "formal" or "casual"
-            api_key: Explicit Gemini API key passed from external router loop
+            api_key: Explicit Gemini API key passed from main.py rotation loop
         
         Returns:
-            Dict with response, status, tokens, etc.
+            Dict with response, status, tokens, error_type, etc.
         """
         try:
             # Get or create session
@@ -176,201 +176,95 @@ RESPONSE RULES:
             print(f"[SessionManager] 📤 Sending message to session {session_id}")
             print(f"[SessionManager] User: {user_message[:50]}...")
             
-            # --- CASE 1: Explicit API key provided by main.py's rotation loop ---
+            # Configure Gemini with provided key or default
             if api_key:
                 genai.configure(api_key=api_key)
-                try:
-                    response = chat.send_message(user_message, stream=False)
-                    assistant_response = response.text.strip()
-                    
-                    if not assistant_response:
-                        return {
-                            "success": False,
-                            "response": "",
-                            "error": "Empty response from Gemini",
-                            "error_type": "other",
-                            "tokens_used": 0,
-                            "session_id": session_id,
-                        }
-                    
-                    # Track activity and estimate tokens
-                    tokens_used = self._estimate_tokens(user_message + assistant_response)
-                    if session_id in self.sessions:
-                        self.sessions[session_id]["last_activity"] = datetime.now()
-                    
-                    return {
-                        "success": True,
-                        "response": assistant_response,
-                        "error": None,
-                        "tokens_used": tokens_used,
-                        "session_id": session_id,
-                    }
-                except Exception as e:
-                    error_str = str(e)
-                    error_str_lower = error_str.lower()
-                    error_type = "other"
-                    
-                    # Categorize Gemini exceptions so main.py knows how to handle the key state
-                    if "429" in error_str or "resource_exhausted" in error_str_lower or "quota" in error_str_lower:
-                        if "daily" in error_str_lower or "limit exceeded" in error_str_lower:
-                            error_type = "daily_quota"
-                        else:
-                            error_type = "rpm_limit"
-                            
-                    return {
-                        "success": False,
-                        "response": "",
-                        "error": error_str,
-                        "error_type": error_type,
-                        "tokens_used": 0,
-                        "session_id": session_id,
-                    }
+                print(f"[SessionManager] 🔑 Using provided API key from main.py")
+            else:
+                genai.configure(api_key=GEMINI_API_KEYS[0])
+                print(f"[SessionManager] 🔑 Using default API key")
             
-            # --- CASE 2: Fallback to internal session manager rotation loop ---
-            return self._send_with_key_rotation(chat, user_message, session_id)
+            # Send message to persistent chat
+            response = chat.send_message(user_message, stream=False)
+            assistant_response = response.text.strip()
+            
+            if not assistant_response:
+                return {
+                    "success": False,
+                    "response": "",
+                    "error": "Empty response from Gemini",
+                    "error_type": "other",
+                    "tokens_used": 0,
+                    "session_id": session_id,
+                }
+            
+            # Track activity and estimate tokens
+            tokens_used = self._estimate_tokens(user_message + assistant_response)
+            if session_id in self.sessions:
+                self.sessions[session_id]["last_activity"] = datetime.now()
+            
+            print(f"[SessionManager] ✅ Response sent (~{tokens_used} tokens)")
+            
+            return {
+                "success": True,
+                "response": assistant_response,
+                "error": None,
+                "error_type": None,
+                "tokens_used": tokens_used,
+                "session_id": session_id,
+            }
         
         except Exception as e:
             error_str = str(e)
-            print(f"[SessionManager] ❌ Unexpected error: {error_str}")
+            error_type = self._detect_error_type(error_str)
+            
+            print(f"[SessionManager] ⚠️  Error: {error_str[:80]}")
+            print(f"[SessionManager] Error type detected: {error_type}")
             
             return {
                 "success": False,
                 "response": "",
-                "error": f"Unexpected error: {error_str[:100]}",
-                "error_type": "other",
+                "error": error_str[:100],
+                "error_type": error_type,
                 "tokens_used": 0,
                 "session_id": session_id,
             }
-    def _send_with_key_rotation(self, chat, user_message: str, session_id: str) -> dict:
+
+
+    
+    def _detect_error_type(self, error_str: str) -> str:
         """
-        Send message with automatic key rotation on quota exceeded
+        Detect error type from Gemini exception message
         
-        Tries up to total_keys times (once per key)
+        Args:
+            error_str: Exception error message
+        
+        Returns:
+            "rpm_limit", "daily_quota", "other"
         """
-        attempts = 0
-        max_attempts = self.key_manager.total_keys
+        error_lower = error_str.lower()
         
-        while attempts < max_attempts:
-            attempts += 1
-            
-            # Configure genai with current key
-            current_key = self.key_manager.get_current_key()
-            genai.configure(api_key=current_key)
-            
-            try:
-                # Send message to chat
-                response = chat.send_message(
-                    user_message,
-                    stream=False,
-                )
-                
-                assistant_response = response.text.strip()
-                
-                if not assistant_response:
-                    return {
-                        "success": False,
-                        "response": "",
-                        "error": "Empty response from Gemini",
-                        "tokens_used": 0,
-                        "session_id": session_id,
-                    }
-                
-                # Success!
-                tokens_used = self._estimate_tokens(user_message + assistant_response)
-                
-                # Update last activity
-                if session_id in self.sessions:
-                    self.sessions[session_id]["last_activity"] = datetime.now()
-                
-                print(f"[SessionManager] ✅ Response sent (~{tokens_used} tokens)")
-                
-                return {
-                    "success": True,
-                    "response": assistant_response,
-                    "error": None,
-                    "tokens_used": tokens_used,
-                    "session_id": session_id,
-                }
-            
-            except Exception as e:
-                error_str = str(e)
-                print(f"[SessionManager] ⚠️  Error with current key: {error_str[:80]}")
-                
-                # Check if it's a quota error
-                if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str or "quota" in error_str.lower():
-                    print(f"[SessionManager] 🚨 Quota exceeded! Attempting key rotation...")
-                    
-                    # Mark current key as exhausted
-                    self.key_manager.mark_key_exhausted()
-                    
-                    # Try next key
-                    next_key = self.key_manager.switch_to_next_key()
-                    
-                    if next_key is None:
-                        # All keys exhausted
-                        return {
-                            "success": False,
-                            "response": "",
-                            "error": "🚨 All API keys quota exceeded. Please try again in a few hours.",
-                            "tokens_used": 0,
-                            "session_id": session_id,
-                        }
-                    
-                    # Continue to next iteration with new key
-                    continue
-                
-                # For other errors, handle as before
-                elif "RATE_LIMIT" in error_str:
-                    return {
-                        "success": False,
-                        "response": "",
-                        "error": "Rate limit reached. Please wait a moment and try again.",
-                        "tokens_used": 0,
-                        "session_id": session_id,
-                    }
-                
-                elif "INVALID_ARGUMENT" in error_str:
-                    return {
-                        "success": False,
-                        "response": "",
-                        "error": "Invalid request. Please try rephrasing your question.",
-                        "tokens_used": 0,
-                        "session_id": session_id,
-                    }
-                
-                elif "UNAUTHENTICATED" in error_str:
-                    return {
-                        "success": False,
-                        "response": "",
-                        "error": "Gemini API authentication failed. Check your API keys.",
-                        "tokens_used": 0,
-                        "session_id": session_id,
-                    }
-                
-                else:
-                    # Non-quota error, return immediately
-                    return {
-                        "success": False,
-                        "response": "",
-                        "error": f"Gemini API error: {error_str[:100]}",
-                        "tokens_used": 0,
-                        "session_id": session_id,
-                    }
+        # Check for quota/rate limit errors
+        if "429" in error_str or "resource_exhausted" in error_lower or "quota" in error_lower:
+            # Distinguish between temporary (RPM) and permanent (daily)
+            if "daily" in error_lower or "limit exceeded" in error_lower:
+                return "daily_quota"
+            else:
+                return "rpm_limit"
         
-        # Shouldn't reach here, but just in case
-        return {
-            "success": False,
-            "response": "",
-            "error": "Failed to get response after trying all keys",
-            "tokens_used": 0,
-            "session_id": session_id,
-        }
+        # Check for explicit rate limit
+        if "rate_limit" in error_lower or "too many requests" in error_lower:
+            return "rpm_limit"
+        
+        # Everything else
+        return "other"
+
     def get_or_create_session(self, session_id: str, tone: str = "formal") -> object:
         """
         Get existing session or create new one
         
         Args:
-            session_id: Unique session identifier (from frontend)
+            session_id: Unique session identifier
             tone: "formal" or "casual"
         
         Returns:
@@ -420,6 +314,7 @@ RESPONSE RULES:
             import traceback
             traceback.print_exc()
             raise
+
     def get_session(self, session_id: str) -> Optional[object]:
         """
         Get existing session (don't create if missing)
@@ -428,14 +323,12 @@ RESPONSE RULES:
             session_id: Session identifier
         
         Returns:
-            Chat object or None if doesn't exist
+            Chat object if exists, None otherwise
         """
         if session_id in self.sessions:
-            self.sessions[session_id]["last_activity"] = datetime.now()
             return self.sessions[session_id]["chat"]
         return None
 
-
     def _cleanup_old_sessions(self) -> int:
         """
         Remove sessions inactive for 30+ minutes
@@ -463,7 +356,8 @@ RESPONSE RULES:
             print(f"[SessionManager] Cleanup: Deleted {len(sessions_to_delete)} old sessions. Active: {len(self.sessions)}")
         
         return len(sessions_to_delete)
-    
+        
+
     def _estimate_tokens(self, text: str) -> int:
         """
         Estimate token count for text
@@ -483,7 +377,7 @@ RESPONSE RULES:
         except Exception:
             # Fallback: rough estimate (1 token ≈ 4 characters)
             return max(1, len(text) // 4)
-    
+
     def get_all_sessions(self) -> dict:
         """
         Get info about all active sessions (useful for debugging)
@@ -515,7 +409,7 @@ RESPONSE RULES:
             "timeout_minutes": self.session_timeout.total_seconds() / 60,
             "sessions": sessions_info,
         }
-    
+
     def clear_session(self, session_id: str) -> bool:
         """
         Manually delete a specific session
@@ -531,113 +425,7 @@ RESPONSE RULES:
             print(f"[SessionManager] 🗑️  Manually cleared session: {session_id}")
             return True
         return False
-    
-    def clear_all_sessions(self):
-        """
-        Clear all sessions (use with caution!)
-        """
-        count = len(self.sessions)
-        self.sessions.clear()
-        print(f"[SessionManager] ⚠️  Cleared all {count} sessions")
 
-
-
-    def _cleanup_old_sessions(self) -> int:
-        """
-        Remove sessions inactive for 30+ minutes
-        Prevents memory leaks from accumulating old sessions
-        
-        Returns:
-            Number of sessions deleted
-        """
-        now = datetime.now()
-        sessions_to_delete = []
-        
-        for session_id, session_data in self.sessions.items():
-            last_activity = session_data["last_activity"]
-            time_since_activity = now - last_activity
-            
-            if time_since_activity > self.session_timeout:
-                sessions_to_delete.append(session_id)
-        
-        # Delete old sessions
-        for session_id in sessions_to_delete:
-            del self.sessions[session_id]
-            print(f"[SessionManager] 🗑️  Deleted inactive session: {session_id}")
-        
-        if sessions_to_delete:
-            print(f"[SessionManager] Cleanup: Deleted {len(sessions_to_delete)} old sessions. Active: {len(self.sessions)}")
-        
-        return len(sessions_to_delete)
-    
-    def _estimate_tokens(self, text: str) -> int:
-        """
-        Estimate token count for text
-        Uses Gemini's token counter or rough estimate
-        
-        Args:
-            text: Text to estimate tokens for
-        
-        Returns:
-            Estimated token count
-        """
-        try:
-            # Try using Gemini's token counter
-            model = genai.GenerativeModel(self.model_name)
-            response = model.count_tokens(text)
-            return response.total_tokens
-        except Exception:
-            # Fallback: rough estimate (1 token ≈ 4 characters)
-            return max(1, len(text) // 4)
-    
-    def get_all_sessions(self) -> dict:
-        """
-        Get info about all active sessions (useful for debugging)
-        
-        Returns:
-            Dict with session stats
-        """
-        now = datetime.now()
-        sessions_info = {}
-        
-        for session_id, session_data in self.sessions.items():
-            created_at = session_data["created_at"]
-            last_activity = session_data["last_activity"]
-            tone = session_data.get("tone", "unknown")
-            
-            age = now - created_at
-            inactive = now - last_activity
-            
-            sessions_info[session_id] = {
-                "tone": tone,
-                "age_minutes": int(age.total_seconds() / 60),
-                "inactive_minutes": int(inactive.total_seconds() / 60),
-                "created_at": created_at.isoformat(),
-                "last_activity": last_activity.isoformat(),
-            }
-        
-        return {
-            "active_sessions": len(self.sessions),
-            "timeout_minutes": self.session_timeout.total_seconds() / 60,
-            "sessions": sessions_info,
-        }
-    
-    def clear_session(self, session_id: str) -> bool:
-        """
-        Manually delete a specific session
-        
-        Args:
-            session_id: Session to delete
-        
-        Returns:
-            True if deleted, False if not found
-        """
-        if session_id in self.sessions:
-            del self.sessions[session_id]
-            print(f"[SessionManager] 🗑️  Manually cleared session: {session_id}")
-            return True
-        return False
-    
     def clear_all_sessions(self):
         """
         Clear all sessions (use with caution!)
