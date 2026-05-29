@@ -139,6 +139,8 @@ RESPONSE RULES:
         Send message to persistent chat session.
         Supports external API key rotation orchestration from main.py.
         
+        CRITICAL: When switching API keys, clears old session to ensure fresh chat binding.
+        
         Args:
             session_id: Session identifier
             user_message: User's question/message
@@ -149,7 +151,38 @@ RESPONSE RULES:
             Dict with response, status, tokens, error_type, etc.
         """
         try:
-            # Get or create session
+            # Validate input first
+            if not user_message or not user_message.strip():
+                return {
+                    "success": False,
+                    "response": "",
+                    "error": "Message cannot be empty",
+                    "error_type": "invalid_input",
+                    "tokens_used": 0,
+                    "session_id": session_id,
+                }
+            
+            # ===== CRITICAL: Configure API key FIRST =====
+            if api_key:
+                genai.configure(api_key=api_key)
+                print(f"[SessionManager] 🔑 Configured with provided API key")
+                
+                # When using explicit api_key (from main.py rotation):
+                # DON'T reuse existing sessions - create fresh chat with new key
+                # This ensures the chat object is properly bound to the new key
+                should_clear_session = True
+            else:
+                genai.configure(api_key=GEMINI_API_KEYS[0])
+                print(f"[SessionManager] 🔑 Configured with default API key")
+                should_clear_session = False
+            
+            # If switching keys, clear the old session to force a new chat object
+            if should_clear_session and session_id in self.sessions:
+                old_session = self.sessions[session_id]
+                print(f"[SessionManager] 🔄 Clearing old session (was using different key)")
+                del self.sessions[session_id]
+            
+            # ===== THEN get/create session (chat object will use current config) =====
             chat = self.get_or_create_session(session_id, tone)
             
             if chat is None:
@@ -162,27 +195,8 @@ RESPONSE RULES:
                     "session_id": session_id,
                 }
             
-            # Validate input
-            if not user_message or not user_message.strip():
-                return {
-                    "success": False,
-                    "response": "",
-                    "error": "Message cannot be empty",
-                    "error_type": "invalid_input",
-                    "tokens_used": 0,
-                    "session_id": session_id,
-                }
-            
             print(f"[SessionManager] 📤 Sending message to session {session_id}")
             print(f"[SessionManager] User: {user_message[:50]}...")
-            
-            # Configure Gemini with provided key or default
-            if api_key:
-                genai.configure(api_key=api_key)
-                print(f"[SessionManager] 🔑 Using provided API key from main.py")
-            else:
-                genai.configure(api_key=GEMINI_API_KEYS[0])
-                print(f"[SessionManager] 🔑 Using default API key")
             
             # Send message to persistent chat
             response = chat.send_message(user_message, stream=False)
@@ -229,8 +243,6 @@ RESPONSE RULES:
                 "tokens_used": 0,
                 "session_id": session_id,
             }
-
-
     
     def _detect_error_type(self, error_str: str) -> str:
         """

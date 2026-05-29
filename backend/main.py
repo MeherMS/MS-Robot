@@ -16,6 +16,8 @@ from concurrent.futures import ThreadPoolExecutor
 import json
 from pymongo import MongoClient
 import os
+import time
+from modules.key_manager import key_manager
 
 
 app = FastAPI(title="MSRobot Backend")
@@ -408,6 +410,279 @@ async def test_llm():
             "error": str(e),
         }
 
+
+
+import os
+from fastapi import FastAPI, HTTPException
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+
+
+# Retrieve and split the keys into a list
+# Falls back to an empty list if the env variable doesn't exist
+GEMINI_API_KEYS = [key.strip() for key in os.getenv("GEMINI_API_KEYS", "").split(",") if key.strip()]
+#from config import CONF_LLM_ONLY, GEMINI_API_KEYS
+
+@app.get("/debug/test-key-switching")
+async def debug_test_key_switching():
+    """
+    Test if chat objects respect API key switches.
+    
+    This endpoint helps determine:
+    1. Does genai.configure() affect existing chat objects?
+    2. Does rotation actually work?
+    3. Are keys properly bound or are they global?
+    
+    Returns detailed logs to help diagnose key switching behavior.
+    """
+    
+    print("\n" + "="*80)
+    print("[DEBUG] KEY SWITCHING TEST STARTED")
+    print("="*80 + "\n")
+    
+    results = {
+        "test_name": "Key Switching Behavior Test",
+        "timestamp": datetime.utcnow().isoformat(),
+        "total_keys_available": key_manager._get_available_keys,
+        "tests": [],
+    }
+    
+    try:
+        # ============================================================
+        # TEST 1: Simple key switch with different sessions
+        # ============================================================
+        print("[TEST 1] Different Sessions with Different Keys")
+        print("-" * 80)
+        
+        test1_result = {
+            "name": "Different sessions, different keys",
+            "session_1": None,
+            "session_2": None,
+            "analysis": None,
+        }
+        
+        # Get first key
+        key1 = GEMINI_API_KEYS[0]
+        key1_num = 1
+        print(f"[TEST 1] Using Key {key1_num}: {key1[:20]}...{key1[-10:]}")
+        
+        # Session 1 with Key 1
+        result1 = session_manager.send_message(
+            session_id="debug_session_1",
+            user_message="What is 2+2?",
+            tone="formal",
+            api_key=key1,
+        )
+        
+        test1_result["session_1"] = {
+            "session_id": "debug_session_1",
+            "key_used": f"Key {key1_num}",
+            "success": result1["success"],
+            "response_preview": result1["response"][:50] if result1["response"] else "N/A",
+            "error": result1.get("error"),
+            "tokens": result1.get("tokens_used"),
+        }
+        
+        print(f"[TEST 1] Session 1 Result: {'✅ SUCCESS' if result1['success'] else '❌ FAILED'}")
+        if not result1['success']:
+            print(f"[TEST 1] Error: {result1.get('error')}")
+        
+        time.sleep(1)  # Pause between requests
+        
+        # Get second key (if available)
+        if key_manager.total_keys > 1:
+            key2 = GEMINI_API_KEYS[1]
+            key2_num = 2
+            print(f"\n[TEST 1] Using Key {key2_num}: {key2[:20]}...{key2[-10:]}")
+            
+            # Session 2 with Key 2
+            result2 = session_manager.send_message(
+                session_id="debug_session_2",
+                user_message="What is 3+3?",
+                tone="formal",
+                api_key=key2,
+            )
+            
+            test1_result["session_2"] = {
+                "session_id": "debug_session_2",
+                "key_used": f"Key {key2_num}",
+                "success": result2["success"],
+                "response_preview": result2["response"][:50] if result2["response"] else "N/A",
+                "error": result2.get("error"),
+                "tokens": result2.get("tokens_used"),
+            }
+            
+            print(f"[TEST 1] Session 2 Result: {'✅ SUCCESS' if result2['success'] else '❌ FAILED'}")
+            if not result2['success']:
+                print(f"[TEST 1] Error: {result2.get('error')}")
+            
+            # Analysis
+            if result1["success"] and result2["success"]:
+                test1_result["analysis"] = "✅ Both keys work independently in different sessions"
+            elif result1["success"] and not result2["success"]:
+                test1_result["analysis"] = "⚠️ Key 1 works but Key 2 fails - possible key issue"
+            elif not result1["success"] and result2["success"]:
+                test1_result["analysis"] = "⚠️ Key 1 fails but Key 2 works - possible key issue"
+            else:
+                test1_result["analysis"] = "❌ Both keys failed - likely global rate limit hit"
+        else:
+            test1_result["analysis"] = "⚠️ Only 1 key available, skipping comparison"
+        
+        results["tests"].append(test1_result)
+        
+        # ============================================================
+        # TEST 2: Same session, different keys (the critical test)
+        # ============================================================
+        print("\n[TEST 2] Same Session, Key Switch Mid-Conversation")
+        print("-" * 80)
+        
+        test2_result = {
+            "name": "Same session with key switch",
+            "message_1": None,
+            "message_2": None,
+            "analysis": None,
+        }
+        
+        # Create session with Key 1
+        session_id = "debug_session_keyswitch"
+        print(f"[TEST 2] Creating session with Key 1: {key1[:20]}...{key1[-10:]}")
+        
+        result2_msg1 = session_manager.send_message(
+            session_id=session_id,
+            user_message="Remember this: I like Python",
+            tone="formal",
+            api_key=key1,
+        )
+        
+        test2_result["message_1"] = {
+            "message": "Remember this: I like Python",
+            "key_used": "Key 1",
+            "success": result2_msg1["success"],
+            "response_preview": result2_msg1["response"][:50] if result2_msg1["response"] else "N/A",
+        }
+        
+        print(f"[TEST 2] Message 1 with Key 1: {'✅ SUCCESS' if result2_msg1['success'] else '❌ FAILED'}")
+        
+        time.sleep(1)
+        
+        # Now send another message with Key 2 (if available) - SAME SESSION
+        if key_manager.total_keys > 1:
+            print(f"[TEST 2] Same session, switching to Key 2: {key2[:20]}...{key2[-10:]}")
+            
+            result2_msg2 = session_manager.send_message(
+                session_id=session_id,
+                user_message="Do you remember what I said earlier?",
+                tone="formal",
+                api_key=key2,
+            )
+            
+            test2_result["message_2"] = {
+                "message": "Do you remember what I said earlier?",
+                "key_used": "Key 2",
+                "success": result2_msg2["success"],
+                "response_preview": result2_msg2["response"][:50] if result2_msg2["response"] else "N/A",
+            }
+            
+            print(f"[TEST 2] Message 2 with Key 2: {'✅ SUCCESS' if result2_msg2['success'] else '❌ FAILED'}")
+            
+            # Check if Key 2 maintained session context
+            response_text = result2_msg2["response"].lower()
+            
+            if "python" in response_text or "remember" in response_text or "earlier" in response_text:
+                test2_result["analysis"] = "✅ Key 2 can access chat history - session/context preserved"
+            elif result2_msg2["success"] and "python" not in response_text:
+                test2_result["analysis"] = "⚠️ Key 2 works but may have lost session context (new chat object?)"
+            else:
+                test2_result["analysis"] = "❌ Key 2 failed - cannot switch keys mid-session"
+        else:
+            test2_result["analysis"] = "⚠️ Only 1 key available, cannot test switch"
+        
+        results["tests"].append(test2_result)
+        
+        # ============================================================
+        # TEST 3: Key Manager Status
+        # ============================================================
+        print("\n[TEST 3] Key Manager Status Check")
+        print("-" * 80)
+        
+        status = key_manager.get_status()
+        
+        test3_result = {
+            "name": "Key Manager Status",
+            "total_keys": status.get("total_keys"),
+            "available_keys": status.get("available_keys"),
+            "in_cooldown": status.get("keys_in_cooldown"),
+            "daily_exhausted": status.get("keys_daily_exhausted"),
+            "breakdown": status.get("breakdown"),
+        }
+        
+        print(f"[TEST 3] Total Keys: {status.get('total_keys')}")
+        print(f"[TEST 3] Available: {status.get('available_keys')}")
+        print(f"[TEST 3] In Cooldown: {status.get('keys_in_cooldown')}")
+        print(f"[TEST 3] Daily Exhausted: {status.get('keys_daily_exhausted')}")
+        
+        for line in status.get("breakdown", []):
+            print(f"[TEST 3]   {line}")
+        
+        results["tests"].append(test3_result)
+        
+        # ============================================================
+        # CLEANUP
+        # ============================================================
+        print("\n[DEBUG] Cleaning up test sessions...")
+        session_manager.clear_session("debug_session_1")
+        session_manager.clear_session("debug_session_2")
+        session_manager.clear_session(session_id)
+        print("[DEBUG] Cleanup complete")
+        
+        # ============================================================
+        # SUMMARY & RECOMMENDATIONS
+        # ============================================================
+        print("\n" + "="*80)
+        print("[DEBUG] TEST SUMMARY")
+        print("="*80)
+        
+        summary = {
+            "all_tests_passed": all(test["analysis"] and "✅" in test["analysis"] for test in results["tests"]),
+            "key_switching_works": "✅" in test2_result["analysis"],
+            "recommendations": [],
+        }
+        
+        # Generate recommendations
+        if "✅" in test1_result["analysis"] and "✅" in test2_result["analysis"]:
+            summary["recommendations"].append("✅ KEY SWITCHING IS WORKING! Your rotation logic should work fine.")
+        elif "⚠️" in test2_result["analysis"] or "❌" in test2_result["analysis"]:
+            summary["recommendations"].append("⚠️ Key switching has issues. You may need to:")
+            summary["recommendations"].append("   1. Create new chat objects when switching keys (not reuse existing ones)")
+            summary["recommendations"].append("   2. Clear and recreate sessions on key switch")
+            summary["recommendations"].append("   3. Investigate if genai.configure() works as expected")
+        
+        if status.get("keys_in_cooldown", 0) > 0 or status.get("keys_daily_exhausted", 0) > 0:
+            summary["recommendations"].append(f"⚠️ Some keys are in cooldown or exhausted - normal if you just tested errors")
+        
+        results["summary"] = summary
+        
+        print("\n[DEBUG] Final Status:")
+        for line in summary["recommendations"]:
+            print(f"[DEBUG] {line}")
+        
+        print("\n" + "="*80 + "\n")
+        
+        return results
+    
+    except Exception as e:
+        print(f"\n[ERROR] Test failed with exception: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
+        return {
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+        }
 
 @app.get("/sessions")
 async def get_sessions():
