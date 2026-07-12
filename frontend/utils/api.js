@@ -10,6 +10,43 @@ const apiClient = axios.create({
   timeout: 180000, // 30 second timeout
 })
 
+/**
+ * Warmup backend by pinging /health with exponential backoff
+ * Wakes up Render's sleeping container on first load
+ * @returns {Promise<boolean>} true if backend is ready, false if timeout
+ */
+export const warmupBackend = async (maxRetries = 12, initialDelay = 500) => {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+  
+  let delay = initialDelay
+  let attempt = 0
+
+  while (attempt < maxRetries) {
+    try {
+      const response = await fetch(`${API_URL}/health`, {
+        method: 'GET',
+        timeout: 5000,
+      })
+
+      if (response.ok) {
+        console.log(`[Warmup] ✅ Backend ready after ${attempt} attempts`)
+        return true
+      }
+    } catch (error) {
+      // Backend not ready yet, will retry
+      console.log(`[Warmup] Attempt ${attempt + 1}/${maxRetries} - Backend not ready, retrying in ${delay}ms`)
+    }
+
+    // Wait before next attempt (exponential backoff: 500ms → 1s → 2s → 4s...)
+    await new Promise((resolve) => setTimeout(resolve, delay))
+    delay = Math.min(delay * 2, 5000) // Cap at 5 seconds
+    attempt++
+  }
+
+  console.warn(`[Warmup] ❌ Backend did not respond after ${maxRetries} attempts`)
+  return false
+}
+
 export const sendMessage = async (message, tone = 'formal', conversationHistory = [], consentGiven = false) => {
   try {
     const response = await apiClient.post('/chat', {
