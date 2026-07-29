@@ -1,6 +1,7 @@
 # backend/modules/key_manager.py
 
-from config import GEMINI_API_KEYS
+#from config import GEMINI_API_KEYS
+from config import GROQ_API_KEYS
 from typing import Optional, Tuple
 from datetime import datetime, timedelta
 
@@ -18,7 +19,7 @@ class KeyManager:
     
     def __init__(self):
         """Initialize KeyManager with keys from config"""
-        self.keys = GEMINI_API_KEYS
+        self.keys = GROQ_API_KEYS
         self.total_keys = len(self.keys)
         self.current_index = 0
         

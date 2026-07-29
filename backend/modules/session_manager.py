@@ -4,19 +4,19 @@ import json
 import os
 from datetime import datetime, timedelta
 from typing import Optional, Dict
-import google.generativeai as genai
+from groq import Groq
 from modules.key_manager import key_manager
 from config import (
-    GEMINI_API_KEYS,
-    GEMINI_MODEL,
+    GROQ_API_KEYS,
+    GROQ_MODEL,
     MAX_RESPONSE_TOKENS,
 )
 
 class SessionManager:
     """
-    Manages persistent Gemini chat sessions per user.
+    Manages persistent Groq chat sessions per user.
     Each session has:
-    - A persistent Gemini chat object (maintains history automatically)
+    - A persistent Groq chat object (maintains history automatically)
     - Knowledge Base loaded in system instruction (one-time cost)
     - Timeout tracking (30 minutes inactivity)
     """
@@ -34,16 +34,17 @@ class SessionManager:
         self.kb_data = self._load_kb()
         
         # Session storage
-        self.sessions: Dict[str, Dict] = {}  # session_id → {chat, created_at, last_activity}
+        self.sessions: Dict[str, Dict] = {}  # session_id → {chat_history, created_at, last_activity}
         self.session_timeout = timedelta(minutes=session_timeout_minutes)
         
         # Key management
         self.key_manager = key_manager
 
-        # Model name for Gemini
-        self.model_name = GEMINI_MODEL
+        # Model name for Groq
+        self.model_name = GROQ_MODEL
         
         print(f"[SessionManager] ✅ Initialized. KB loaded: {self.kb_path}")
+        print(f"[SessionManager] Using Groq model: {self.model_name}")
         print(f"[SessionManager] Session timeout: {session_timeout_minutes} minutes")
     
     def _load_kb(self) -> dict:
@@ -136,16 +137,14 @@ RESPONSE RULES:
 
     def send_message(self, session_id: str, user_message: str, tone: str = "formal", api_key: Optional[str] = None) -> dict:
         """
-        Send message to persistent chat session.
+        Send message to persistent chat session using Groq.
         Supports external API key rotation orchestration from main.py.
-        
-        CRITICAL: When switching API keys, clears old session to ensure fresh chat binding.
         
         Args:
             session_id: Session identifier
             user_message: User's question/message
             tone: "formal" or "casual"
-            api_key: Explicit Gemini API key passed from main.py rotation loop
+            api_key: Explicit Groq API key passed from main.py rotation loop
         
         Returns:
             Dict with response, status, tokens, error_type, etc.
@@ -162,30 +161,19 @@ RESPONSE RULES:
                     "session_id": session_id,
                 }
             
-            # ===== CRITICAL: Configure API key FIRST =====
-            if api_key:
-                genai.configure(api_key=api_key)
-                print(f"[SessionManager] 🔑 Configured with provided API key")
-                
-                # When using explicit api_key (from main.py rotation):
-                # DON'T reuse existing sessions - create fresh chat with new key
-                # This ensures the chat object is properly bound to the new key
-                should_clear_session = True
-            else:
-                genai.configure(api_key=GEMINI_API_KEYS[0])
-                print(f"[SessionManager] 🔑 Configured with default API key")
-                should_clear_session = False
+            # ===== Use provided API key or default to first key =====
+            api_key_to_use = api_key if api_key else GROQ_API_KEYS[0]
+            print(f"[SessionManager] 🔑 Using Groq API key")
             
-            # If switching keys, clear the old session to force a new chat object
-            if should_clear_session and session_id in self.sessions:
-                old_session = self.sessions[session_id]
-                print(f"[SessionManager] 🔄 Clearing old session (was using different key)")
+            # When switching keys, clear the old session
+            if api_key and session_id in self.sessions:
+                print(f"[SessionManager] 🔄 Clearing old session (switching keys)")
                 del self.sessions[session_id]
             
-            # ===== THEN get/create session (chat object will use current config) =====
-            chat = self.get_or_create_session(session_id, tone)
+            # ===== Get or create session =====
+            session_data = self.get_or_create_session(session_id, tone)
             
-            if chat is None:
+            if session_data is None:
                 return {
                     "success": False,
                     "response": "",
@@ -198,26 +186,53 @@ RESPONSE RULES:
             print(f"[SessionManager] 📤 Sending message to session {session_id}")
             print(f"[SessionManager] User: {user_message[:50]}...")
             
-            # Send message to persistent chat
-            response = chat.send_message(user_message, stream=False)
-            assistant_response = response.text.strip()
+            # Build system prompt
+            system_prompt = self._build_system_prompt(tone)
+            
+            # Get conversation history
+            messages = session_data["messages"]
+            
+            # Initialize Groq client with current API key
+            client = Groq(api_key=api_key_to_use)
+            
+            # Send message to Groq
+            response = client.chat.completions.create(
+                model=self.model_name,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    *messages,
+                    {"role": "user", "content": user_message}
+                ],
+                max_tokens=MAX_RESPONSE_TOKENS,
+                temperature=0.7,
+            )
+            
+            assistant_response = response.choices[0].message.content.strip()
             
             if not assistant_response:
                 return {
                     "success": False,
                     "response": "",
-                    "error": "Empty response from Gemini",
+                    "error": "Empty response from Groq",
                     "error_type": "other",
                     "tokens_used": 0,
                     "session_id": session_id,
                 }
+            
+            # Update conversation history
+            messages.append({"role": "user", "content": user_message})
+            messages.append({"role": "assistant", "content": assistant_response})
+            
+            # Keep only last 20 messages to prevent token explosion
+            if len(messages) > 20:
+                messages = messages[-20:]
             
             # Track activity and estimate tokens
             tokens_used = self._estimate_tokens(user_message + assistant_response)
             if session_id in self.sessions:
                 self.sessions[session_id]["last_activity"] = datetime.now()
             
-            print(f"[SessionManager] ✅ Response sent (~{tokens_used} tokens)")
+            print(f"[SessionManager] ✅ Response sent. Tokens: ~{tokens_used}")
             
             return {
                 "success": True,
@@ -232,7 +247,7 @@ RESPONSE RULES:
             error_str = str(e)
             error_type = self._detect_error_type(error_str)
             
-            print(f"[SessionManager] ⚠️  Error: {error_str[:80]}")
+            print(f"[SessionManager] ⚠️  Error: {error_str}")
             print(f"[SessionManager] Error type detected: {error_type}")
             
             return {
@@ -246,7 +261,7 @@ RESPONSE RULES:
     
     def _detect_error_type(self, error_str: str) -> str:
         """
-        Detect error type from Gemini exception message
+        Detect error type from Groq exception message
         
         Args:
             error_str: Exception error message
@@ -257,21 +272,16 @@ RESPONSE RULES:
         error_lower = error_str.lower()
         
         # Check for quota/rate limit errors
-        if "429" in error_str or "resource_exhausted" in error_lower or "quota" in error_lower:
-            # Distinguish between temporary (RPM) and permanent (daily)
-            if "daily" in error_lower or "limit exceeded" in error_lower:
-                return "daily_quota"
-            else:
-                return "rpm_limit"
-        
-        # Check for explicit rate limit
-        if "rate_limit" in error_lower or "too many requests" in error_lower:
+        if "429" in error_str or "rate_limit" in error_lower or "too many requests" in error_lower:
             return "rpm_limit"
+        
+        if "quota" in error_lower or "limit exceeded" in error_lower:
+            return "daily_quota"
         
         # Everything else
         return "other"
 
-    def get_or_create_session(self, session_id: str, tone: str = "formal") -> object:
+    def get_or_create_session(self, session_id: str, tone: str = "formal") -> Optional[dict]:
         """
         Get existing session or create new one
         
@@ -280,7 +290,7 @@ RESPONSE RULES:
             tone: "formal" or "casual"
         
         Returns:
-            Gemini chat object (persistent across messages)
+            Session data dict with message history, or None if error
         """
         # Cleanup old sessions before processing
         self._cleanup_old_sessions()
@@ -290,44 +300,33 @@ RESPONSE RULES:
             session = self.sessions[session_id]
             session["last_activity"] = datetime.now()
             print(f"[SessionManager] ♻️ Reusing session: {session_id}")
-            return session["chat"]
+            return session
         
         # Create new session
         print(f"[SessionManager] 🆕 Creating new session: {session_id} (tone: {tone})")
         
         try:
-            # Build system prompt with KB
-            system_prompt = self._build_system_prompt(tone)
-            
-            # Create model with system instruction
-            model = genai.GenerativeModel(
-                model_name=self.model_name,
-                system_instruction=system_prompt,
-            )
-            
-            # Create persistent chat session
-            chat = model.start_chat(history=[])
-            
-            # Store session
-            self.sessions[session_id] = {
-                "chat": chat,
+            # Create session data
+            session_data = {
+                "messages": [],  # Will store conversation history
                 "created_at": datetime.now(),
                 "last_activity": datetime.now(),
                 "tone": tone,
-                "model": model,
-                "system_prompt": system_prompt,
             }
             
+            # Store session
+            self.sessions[session_id] = session_data
+            
             print(f"[SessionManager] ✅ Session created: {session_id}")
-            return chat
+            return session_data
         
         except Exception as e:
             print(f"[SessionManager] ❌ Error creating session: {e}")
             import traceback
             traceback.print_exc()
-            raise
+            return None
 
-    def get_session(self, session_id: str) -> Optional[object]:
+    def get_session(self, session_id: str) -> Optional[dict]:
         """
         Get existing session (don't create if missing)
         
@@ -335,10 +334,10 @@ RESPONSE RULES:
             session_id: Session identifier
         
         Returns:
-            Chat object if exists, None otherwise
+            Session data if exists, None otherwise
         """
         if session_id in self.sessions:
-            return self.sessions[session_id]["chat"]
+            return self.sessions[session_id]
         return None
 
     def _cleanup_old_sessions(self) -> int:
@@ -373,7 +372,7 @@ RESPONSE RULES:
     def _estimate_tokens(self, text: str) -> int:
         """
         Estimate token count for text
-        Uses Gemini's token counter or rough estimate
+        Rough estimate: 1 token ≈ 4 characters
         
         Args:
             text: Text to estimate tokens for
@@ -381,14 +380,8 @@ RESPONSE RULES:
         Returns:
             Estimated token count
         """
-        try:
-            # Try using Gemini's token counter
-            model = genai.GenerativeModel(self.model_name)
-            response = model.count_tokens(text)
-            return response.total_tokens
-        except Exception:
-            # Fallback: rough estimate (1 token ≈ 4 characters)
-            return max(1, len(text) // 4)
+        # Fallback: rough estimate (1 token ≈ 4 characters)
+        return max(1, len(text) // 4)
 
     def get_all_sessions(self) -> dict:
         """
@@ -404,12 +397,14 @@ RESPONSE RULES:
             created_at = session_data["created_at"]
             last_activity = session_data["last_activity"]
             tone = session_data.get("tone", "unknown")
+            msg_count = len(session_data.get("messages", []))
             
             age = now - created_at
             inactive = now - last_activity
             
             sessions_info[session_id] = {
                 "tone": tone,
+                "message_count": msg_count,
                 "age_minutes": int(age.total_seconds() / 60),
                 "inactive_minutes": int(inactive.total_seconds() / 60),
                 "created_at": created_at.isoformat(),

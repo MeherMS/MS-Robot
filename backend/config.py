@@ -10,7 +10,7 @@ load_dotenv()
 # ============================================================================
 
 # Parse multiple API keys from comma-separated env variable
-GEMINI_API_KEYS_RAW = os.getenv("GEMINI_API_KEYS", "").strip()
+"""GEMINI_API_KEYS_RAW = os.getenv("GEMINI_API_KEYS", "").strip()
 MONGODB_URI = os.getenv("MONGODB_URI")
 if not GEMINI_API_KEYS_RAW:
     raise ValueError(
@@ -28,7 +28,30 @@ print(f"[CONFIG] ✅ Loaded {len(GEMINI_API_KEYS)} Gemini API key(s)")
 
 GEMINI_MODEL = "gemini-2.5-flash"  # Free tier model
 MAX_RESPONSE_TOKENS = 1024  # Max tokens in LLM response
+"""
+# ============================================================================
+# GROQ API CONFIGURATION - MULTIPLE KEYS FOR QUOTA ROTATION
+# ============================================================================
 
+# Parse multiple API keys from comma-separated env variable
+GROQ_API_KEYS_RAW = os.getenv("GROQ_API_KEYS", "").strip()
+MONGODB_URI = os.getenv("MONGODB_URI")
+if not GROQ_API_KEYS_RAW:
+    raise ValueError(
+        "GROQ_API_KEYS environment variable not set. \n"
+        "Format: GROQ_API_KEYS=key1,key2,key3\n"
+        "Get keys at: https://console.groq.com/keys"
+    )
+
+GROQ_API_KEYS = [key.strip() for key in GROQ_API_KEYS_RAW.split(",") if key.strip()]
+
+if not GROQ_API_KEYS:
+    raise ValueError("No valid API keys found in GROQ_API_KEYS")
+
+print(f"[CONFIG] ✅ Loaded {len(GROQ_API_KEYS)} Groq API key(s)")
+
+GROQ_MODEL = "llama-3.3-70b-versatile"  # Free tier model (fastest)
+MAX_RESPONSE_TOKENS = 1024  # Max tokens in LLM response
 
 # ============================================================================
 # KB RETRIEVAL THRESHOLDS
